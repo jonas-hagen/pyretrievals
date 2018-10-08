@@ -1,0 +1,8 @@
+DATA_DIR=/iap/MW/users/hagen/projects/pyretrievals/data/
+
+# This part was created by create_env.sh
+ARTS_HOME=/opt/arts-dev
+ARTS_INCLUDE_PATH=/opt/arts-dev/arts/controlfiles/
+ARTS_DATA_PATH=/opt/arts-dev/arts-xml-data/
+ARTS_BUILD_PATH=/opt/arts-dev/arts/build/
+ARTS_SRC_PATH=/opt/arts-dev/arts/
