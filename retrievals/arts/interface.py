@@ -1,10 +1,17 @@
 import numpy as np
+from scipy import sparse
 from collections import namedtuple
+
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path='./.env')
 
 from typhon.arts.workspace import Workspace, arts_agenda
 from typhon.arts import xml
+from typhon.arts.catalogues import Sparse
 
-from . import boilerplate
+from retrievals.arts import boilerplate
+from retrievals.arts import retrieval
 
 
 def _is_asc(x):
@@ -18,9 +25,6 @@ def _is_desc(x):
 
 
 Observation = namedtuple('Observation', ['time', 'za', 'aa', 'lat', 'lon', 'alt'])
-
-
-RetrievalQuantity = namedtuple('RetrievalQuantity', ['type', 'covmat', 'kwargs'])
 
 
 class ArtsController:
@@ -62,7 +66,6 @@ class ArtsController:
         """
         boilerplate.setup_spectroscopy(self.ws, abs_lines, abs_species, line_shape)
         self.ws.f_abs_interp_order = f_abs_interp_order  # no effect for OnTheFly propmat
-
 
     def set_spectroscopy_from_file(self, abs_lines_file, abs_species, line_shape=None):
         """
@@ -146,8 +149,9 @@ class ArtsController:
         if atmosphere.dimensions == 1:
             self.ws.AtmFieldsCalcExpand1D()
         else:
-            raise NotImplementedError('Inhomogeneous (multi-dimensional) raw atmospheres are not implemented (and not tested).')
-            #ws.AtmFieldsCalc()  Maybe?
+            raise NotImplementedError(
+                'Inhomogeneous (multi-dimensional) raw atmospheres are not implemented (and not tested).')
+            # ws.AtmFieldsCalc()  Maybe?
 
     def set_wind(self, atmosphere=None, components=None):
         """
@@ -180,8 +184,9 @@ class ArtsController:
         if atmosphere.dimensions == 1:
             self.ws.WindFieldsCalcExpand1D()
         else:
-            raise NotImplementedError('Inhomogeneous (multi-dimensional) raw atmospheres are not implemented (and not tested).')
-            #ws.AtmFieldsCalc()  Maybe?
+            raise NotImplementedError(
+                'Inhomogeneous (multi-dimensional) raw atmospheres are not implemented (and not tested).')
+            # ws.AtmFieldsCalc()  Maybe?
 
     def set_observations(self, observations):
         """
@@ -200,10 +205,71 @@ class ArtsController:
     def y_calc(self, jacobian_do=False):
         if jacobian_do:
             raise NotImplementedError('Jacobian not implemented yet.')
-            #self.ws.jacobian_do = 1
+            # self.ws.jacobian_do = 1
         self.ws.yCalc()
         y = np.copy(self.ws.y.value)
         return np.split(y, self.n_obs)
+
+    def define_retrieval(self, retrieval_quantities, y_vars):
+        ws = self.ws
+
+        if len(y_vars) != self.n_y:
+            raise ValueError('Variance vector y_vars must have same length as y.')
+
+        # with retrieval.retrieval_def(self.ws):
+        ws.retrievalDefInit()
+        # Retrieval quantities
+        for rq in retrieval_quantities:
+            rq.apply(ws)
+
+        # Se and its inverse
+        covmat_block = sparse.diags(y_vars, format='csr')
+        covmat_inv_block = sparse.diags(1.0 / y_vars, format='csr')
+
+        boilerplate.set_variable_by_xml(ws, ws.covmat_block, covmat_block)
+        ws.covmat_seAddBlock(block=ws.covmat_block)
+        ws.retrievalDefClose()
+
+    def oem(self, method='li', max_iter=10, stop_dx=0.001, lm_ga_settings=None, display_progress=True,
+            inversion_iterate_agenda=None):
+        ws = self.ws
+
+        if lm_ga_settings is None:
+            lm_ga_settings = [10, 2, 2, 100, 1, 99]
+        lm_ga_settings = np.array(lm_ga_settings)
+
+        if inversion_iterate_agenda is None:
+            inversion_iterate_agenda = boilerplate.inversion_iterate_agenda
+
+        ws.Copy(ws.inversion_iterate_agenda, inversion_iterate_agenda)
+
+        if ws.dxdy.initialized:
+            ws.Delete(ws.dxdy)  # This is a workaround to see if OEM converged
+
+        ws.xaStandard()
+        ws.OEM(method=method, max_iter=max_iter, stop_dx=stop_dx, lm_ga_settings=lm_ga_settings,
+               display_progress=1 if display_progress else 0)
+
+        if self.oem_converged:  # Just checks if dxdy is initialized
+            ws.x2artsAtmAndSurf()
+            ws.x2artsSensor()
+            ws.avkCalc()
+            ws.covmat_ssCalc()
+            ws.covmat_soCalc()
+
+        return self.oem_converged
+
+    @property
+    def p_grid(self):
+        return self.ws.p_grid.value
+
+    @property
+    def lat_grid(self):
+        return self.ws.lat_grid.value
+
+    @property
+    def lon_grid(self):
+        return self.ws.lon_grid.value
 
     @property
     def n_lat(self):
@@ -212,6 +278,10 @@ class ArtsController:
     @property
     def n_lon(self):
         return len(self.ws.lat_grid.value)
+
+    @property
+    def n_y(self):
+        return len(self.ws.y.value)
 
     @property
     def n_obs(self):
@@ -226,4 +296,8 @@ class ArtsController:
 
         maintags = [st[0].split('-')[0] for st in abs_species]
         return maintags
+
+    @property
+    def oem_converged(self):
+        return self.ws.dxdy.initialized and self.ws.dxdy.value is not None and self.ws.dxdy.value.shape != (0, 0)
 

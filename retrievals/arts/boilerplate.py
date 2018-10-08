@@ -1,8 +1,13 @@
 """
 Some useful tools to populate and work with an Arts Workspace.
 """
+import os
+from tempfile import TemporaryDirectory
+from scipy import sparse
 
-from typhon.arts.workspace import Workspace
+from typhon.arts.workspace import Workspace, arts_agenda
+from typhon.arts.catalogues import Sparse
+from typhon.arts import xml
 
 
 def new_workspace():
@@ -98,6 +103,44 @@ def run_checks(ws, negative_vmr_ok=False):
     ws.atmgeom_checkedCalc()
     ws.cloudbox_checkedCalc()
     ws.sensor_checkedCalc()
+
+
+def set_variable_by_xml(ws, variable, data):
+    """
+    Set a workspace variable by writing and loading an xml file with binary data.
+    :param ws: The Workspace
+    :param variable: The variable (ws.something)
+    :param data: The data, must be writeable by `typhon.arts.xml.save()`.
+    """
+    if sparse.issparse(data):
+        data = Sparse(data)
+    with TemporaryDirectory() as path:
+        fn = os.path.join(path, 'data.xml')
+        xml.save(data, fn, format='binary')
+        ws.ReadXML(variable, fn)
+
+
+@arts_agenda
+def inversion_iterate_agenda(ws):
+    ws.Ignore(ws.inversion_iteration_counter)
+
+    # Map x to ARTS' variables
+    ws.x2artsAtmAndSurf()
+    ws.x2artsSensor()
+
+    # To be safe, rerun some checks
+    ws.atmfields_checkedCalc()
+    ws.atmgeom_checkedCalc()
+
+    # Calculate yf and Jacobian matching x
+    ws.yCalc()
+
+    # Add baseline term
+    ws.VectorAddVector(ws.yf, ws.y, ws.y_baseline)
+
+    # This method takes cares of some "fixes" that are needed to get the Jacobian
+    # right for iterative solutions. No need to call this WSM for linear inversions.
+    ws.jacobianAdjustAndTransform()
 
 
 if __name__ == '__main__':

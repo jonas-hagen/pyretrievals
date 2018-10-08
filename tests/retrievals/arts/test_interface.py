@@ -1,6 +1,8 @@
 from retrievals.arts.interface import ArtsController, Observation
 from retrievals.arts.atmosphere import Atmosphere
 from retrievals.arts.sensors import SensorGaussian
+from retrievals.arts.retrieval import AbsSpecies
+from retrievals import covmat
 
 import os
 import numpy as np
@@ -16,7 +18,7 @@ def _setup_default_controller():
     ac.setup(atmosphere_dim=3)
     ac.set_spectroscopy_from_file(
         os.path.join(TEST_DATA_PATH, 'Perrin_O3_142.xml'),
-        ['O3', 'H2O-PWR98'],
+        ['O3', ],
     )
     ac.set_grids(
         f_grid=np.linspace(-50e6, 50e6, 300) + f0,
@@ -35,16 +37,42 @@ def _setup_default_controller():
 
     ac.set_observations([Observation(time=0, lat=0, lon=0, alt=12e3, za=90 - 22, aa=azimuth)
                          for azimuth in [90, -90]])
+    ac.checked_calc()
     return ac
 
 
 def test_y_calc():
     # Integration test
     ac = _setup_default_controller()
-    ac.checked_calc()
     y_east, y_west = ac.y_calc()
 
     assert len(y_east) == 600
     assert np.abs(y_east[0] - 15) < 1
     assert np.abs(y_east[300] - 38) < 1
 
+
+def test_retrieval():
+    """Perform a simple O3 retrieval."""
+    ac = _setup_default_controller()
+    ac.checked_calc()
+    ac.y_calc()
+
+    # Variance of y
+    y_vars = 0.01 * np.ones(ac.n_y)
+
+    # O3 covmat and retrieval setup
+    sx = covmat.covmat_diagonal_sparse(1e-6 * np.ones_like(ac.p_grid))
+    rq = AbsSpecies('O3', ac.p_grid, np.array([0]), np.array([0]), covmat=sx, unit='vmr')
+    ac.define_retrieval([rq], y_vars)
+
+    # Offset VMR fields a bit
+    x_true = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
+    ac.ws.Tensor4AddScalar(ac.ws.vmr_field, ac.ws.vmr_field, 0.5e-6)
+    x_a = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
+
+    ac.oem(method='li')
+    x_hat = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
+
+    # Compare values in altitudes between approx. 19 to 47 km
+    assert np.allclose(x_true[20:50], x_hat[20:50], atol=0.1e-6)
+    assert np.allclose(x_a[20:50]-0.5e-6, x_hat[20:50], atol=0.1e-6)
