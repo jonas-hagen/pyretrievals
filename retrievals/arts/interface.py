@@ -200,9 +200,19 @@ class ArtsController:
         self.ws.sensor_pos = np.array([[obs.alt, obs.lat, obs.lon] for obs in observations])
 
     def set_sensor(self, sensor):
+        """
+        Set the sensor.
+        :param sensor:
+        :type sensor: retrievals.arts.sensors.AbstractSensor
+        """
         sensor.apply(self.ws)
 
     def y_calc(self, jacobian_do=False):
+        """
+        Run the forward model.
+        :param jacobian_do: Not implemented yet.
+        :return: The measurements as list with length according to observations.
+        """
         if jacobian_do:
             raise NotImplementedError('Jacobian not implemented yet.')
             # self.ws.jacobian_do = 1
@@ -211,6 +221,11 @@ class ArtsController:
         return np.split(y, self.n_obs)
 
     def define_retrieval(self, retrieval_quantities, y_vars):
+        """
+        Define the retrieval quantities.
+        :param retrieval_quantities: Iterable of retrieval quantities `retrievals.arts.retrieval.RetrievalQuantity`.
+        :param y_vars: Variance of the measurement noise.
+        """
         ws = self.ws
 
         if len(y_vars) != self.n_y:
@@ -230,6 +245,16 @@ class ArtsController:
 
     def oem(self, method='li', max_iter=10, stop_dx=0.001, lm_ga_settings=None, display_progress=True,
             inversion_iterate_agenda=None):
+        """
+        Run the optimal estimation. See Arts documentation for details.
+        :param method:
+        :param max_iter:
+        :param stop_dx:
+        :param lm_ga_settings: Default: [10, 2, 2, 100, 1, 99]
+        :param display_progress:
+        :param inversion_iterate_agenda: If set to None, a simple default agenda is used.
+        :return:
+        """
         ws = self.ws
 
         if lm_ga_settings is None:
@@ -291,7 +316,6 @@ class ArtsController:
     @property
     def abs_species_maintags(self):
         abs_species = self.ws.abs_species.value
-
         maintags = [st[0].split('-')[0] for st in abs_species]
         return maintags
 
