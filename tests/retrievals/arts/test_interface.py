@@ -8,8 +8,8 @@ import numpy as np
 TEST_DATA_PATH = os.path.join(os.path.dirname(__file__), 'test_data')
 
 
-def test_arts_controller():
-    # Huge integration test, how could we do better?
+def _setup_default_controller():
+    """Provide an Arts controller with a complete Workspace."""
     f0 = 142.17504e9
 
     ac = ArtsController()
@@ -35,11 +35,15 @@ def test_arts_controller():
 
     ac.set_observations([Observation(time=0, lat=0, lon=0, alt=12e3, za=90 - 22, aa=azimuth)
                          for azimuth in [90, -90]])
+    return ac
 
+
+def test_y_calc():
+    # Integration test
+    ac = _setup_default_controller()
     ac.checked_calc()
-    y = ac.y_calc()
-
     y_east, y_west = ac.y_calc()
+
     assert len(y_east) == 600
     assert np.abs(y_east[0] - 15) < 1
     assert np.abs(y_east[300] - 38) < 1
