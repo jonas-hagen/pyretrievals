@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractstaticmethod
 import numpy as np
 
 from typhon.arts.workspace import arts_agenda
@@ -6,18 +6,40 @@ from typhon.arts.griddedfield import GriddedField1
 
 
 class AbstractSensor(ABC):
-    @abstractmethod
+    """
+    Abstract Sensor requires the implementation of an `sensor_response_agenda` property.
+    See the specific derived classes for how to use a sensor.
+    """
+
     def apply(self, ws):
+        """Copy and execute sensor response agenda. Subclasses need to call apply of base class."""
+        ws.Copy(ws.sensor_response_agenda, self.sensor_response_agenda)
+        ws.AgendaExecute(ws.sensor_response_agenda)
+
+    @property
+    @abstractmethod
+    def sensor_response_agenda(self):
+        """
+        Build the sensor response agenda.
+        :return: An arts_agenda decorated function taking a Workspace as single argument.
+        """
         pass
 
 
 class SensorOff(AbstractSensor):
+    """Sensor that does nothing."""
+
     def __init__(self):
         pass
 
-    def apply(self, ws):
-        ws.AntennaOff()
-        ws.SensorOff()
+    @property
+    def sensor_response_agenda(self):
+        @arts_agenda
+        def sensor_response_agenda(ws):
+            ws.AntennaOff()
+            ws.SensorOff()
+
+        return sensor_response_agenda
 
 
 class SensorFFT(AbstractSensor):
@@ -34,33 +56,43 @@ class SensorFFT(AbstractSensor):
         self.resolution = resolution
         self.num_channels = num_channels
 
-    def apply(self, ws):
+        # Compute the backend channel response
         grid = np.linspace(-self.num_channels / 2,
                            self.num_channels / 2,
                            20 * self.num_channels)
         response = np.sinc(grid) ** 2
-        bcr = GriddedField1(name='Backend channel response function for FFTS',
-                            gridnames=['Frequency'], dataname='Data',
-                            grids=[self.resolution * grid],
-                            data=response)
+        self.bcr = GriddedField1(name='Backend channel response function for FFTS',
+                                 gridnames=['Frequency'], dataname='Data',
+                                 grids=[self.resolution * grid],
+                                 data=response)
 
+    def apply(self, ws):
         # Modify workspace
         ws.FlagOn(ws.sensor_norm)
         ws.f_backend = self.f_backend
-        ws.backend_channel_response = [bcr, ]
+        ws.backend_channel_response = [self.bcr, ]
 
+        super().apply(ws)
+
+    @property
+    def sensor_response_agenda(self):
         @arts_agenda
         def sensor_response_agenda(ws):
             ws.AntennaOff()
             ws.sensor_responseInit()
             ws.sensor_responseBackend()
 
-        ws.Copy(ws.sensor_response_agenda, sensor_response_agenda)
-        ws.AgendaExecute(ws.sensor_response_agena)
+        return sensor_response_agenda
 
 
 class SensorGaussian(AbstractSensor):
+    """Sensor with Gaussian Channel response."""
+
     def __init__(self, f_backend, fwhm):
+        """
+        :param f_backend: Backend frequencies
+        :param fwhm: Full width at half maximum (resolution)
+        """
         self.f_backend = f_backend
         self.fwhm = fwhm
 
@@ -68,12 +100,14 @@ class SensorGaussian(AbstractSensor):
         ws.FlagOn(ws.sensor_norm)
         ws.f_backend = self.f_backend
         ws.backend_channel_responseGaussian(fwhm=self.fwhm)
+        super().apply(ws)
 
+    @property
+    def sensor_response_agenda(self):
         @arts_agenda
         def sensor_response_agenda(ws):
             ws.AntennaOff()
             ws.sensor_responseInit()
             ws.sensor_responseBackend()
 
-        ws.Copy(ws.sensor_response_agenda, sensor_response_agenda)
-        ws.AgendaExecute(ws.sensor_response_agenda)
+        return sensor_response_agenda
