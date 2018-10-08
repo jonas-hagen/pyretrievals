@@ -54,7 +54,6 @@ class RetrievalQuantity:
         retrieval_add_wsm(**self.args)
         set_variable_by_xml(ws, ws.covmat_block, self.covmat)
         ws.covmat_sxAddBlock(block=ws.covmat_block)
-        print('--- 1 ---')
         pass
 
     @property

@@ -215,19 +215,17 @@ class ArtsController:
 
         if len(y_vars) != self.n_y:
             raise ValueError('Variance vector y_vars must have same length as y.')
-
-        # with retrieval.retrieval_def(self.ws):
         ws.retrievalDefInit()
+
         # Retrieval quantities
         for rq in retrieval_quantities:
             rq.apply(ws)
 
         # Se and its inverse
         covmat_block = sparse.diags(y_vars, format='csr')
-        covmat_inv_block = sparse.diags(1.0 / y_vars, format='csr')
-
         boilerplate.set_variable_by_xml(ws, ws.covmat_block, covmat_block)
         ws.covmat_seAddBlock(block=ws.covmat_block)
+
         ws.retrievalDefClose()
 
     def oem(self, method='li', max_iter=10, stop_dx=0.001, lm_ga_settings=None, display_progress=True,

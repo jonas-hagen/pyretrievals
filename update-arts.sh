@@ -22,6 +22,7 @@ svn update
 # Compile arts
 cd $ARTS_BUILD_PATH
 cmake -DENABLE_C_API=1 -DARTS_XML_DATA_PATH=$ARTS_DATA_PATH -DCMAKE_BUILD_TYPE=RelWithDebInfo $ARTS_SRC_PATH
+make clean
 make -j5
 
 echo 'Done.'
