@@ -20,6 +20,8 @@ retrievalAddTemperature
 
 import numpy as np
 from scipy import sparse
+import xarray as xr
+import pandas as pd
 from contextlib import contextmanager
 
 from .boilerplate import set_variable_by_xml
@@ -132,12 +134,41 @@ class RetrievalQuantity:
         if eo is None:
             eo = ws.retrieval_eo.value
         if es is None:
-            es = ws.retrieval_es.value
+            es = ws.retrieval_ss.value
 
         self._x = x[self._slice]
         self._avkm = avk[self._slice, self._slice]
         self._eo = eo[self._slice]
         self._es = es[self._slice]
+
+    def to_xarray(self):
+        prefix = self.slug + '_'
+        shape = self.shape
+        grid_names = [prefix + 'grid' + str(i+1) for i in range(len(self.shape))]
+        grids = self.grids
+        flat_grid_name = prefix + 'grid'
+
+        coords = {n: c for n, c in zip(grid_names, grids)}
+
+        ds = xr.Dataset(
+            data_vars={
+                prefix + 'x': (grid_names, np.reshape(self.x, shape)),
+                prefix + 'mr': (grid_names, np.reshape(self.mr, shape)),
+                prefix + 'eo': (grid_names, np.reshape(self.eo, shape)),
+                prefix + 'es': (grid_names, np.reshape(self.es, shape)),
+                prefix + 'avkm': ((flat_grid_name, flat_grid_name + '_avk'), self.avkm),
+            },
+            coords=coords,
+            attrs={
+                'maintag': self._jacobian_quantity.maintag,
+                'subtag': self._jacobian_quantity.subtag,
+                'subsubtag': self._jacobian_quantity.subsubtag,
+                'analytical': self._jacobian_quantity.analytical,
+                'mode': self._jacobian_quantity.mode,
+                'perturbation': self._jacobian_quantity.perturbation,
+            }
+        )
+        return ds
 
     @property
     def kind(self):
@@ -154,6 +185,14 @@ class RetrievalQuantity:
     @property
     def num_elem(self):
         return self.covmat.shape[0]
+
+    @property
+    def grids(self):
+        return self._jacobian_quantity.grids
+
+    @property
+    def shape(self):
+        return tuple(map(len, self.grids))
 
     @property
     def ws(self):
@@ -208,6 +247,38 @@ class GriddedRetrievalQuantity(RetrievalQuantity):
             raise ValueError(
                 f'Covariance matrix must have shape according to retrieval grid elements: {expected[0]} x {expected[1]}')
         super().__init__(kind, covmat, **kwargs)
+
+    def to_xarray(self):
+        prefix = self.slug + '_'
+        shape = self.shape
+        grid_names = [prefix + n for n in ('p', 'lat', 'lon')]
+        grids = self.grids
+        flat_grid_name = prefix+'p' if self.dimensions == 1 else prefix + 'grid'
+
+        coords = {n: c for n, c in zip(grid_names, grids)}
+
+        ds = xr.Dataset(
+            data_vars={
+                prefix + 'x': (grid_names, np.reshape(self.x, shape)),
+                prefix + 'mr': (grid_names, np.reshape(self.mr, shape)),
+                prefix + 'eo': (grid_names, np.reshape(self.eo, shape)),
+                prefix + 'es': (grid_names, np.reshape(self.es, shape)),
+                prefix + 'fwhm': (grid_names, np.reshape(self.fwhm, shape)),
+                prefix + 'offset': (grid_names, np.reshape(self.offset, shape)),
+                prefix + 'avkm': ((flat_grid_name, flat_grid_name + '_avk'), self.avkm),
+                prefix + 'z': (grid_names[0], self.z_grid),
+            },
+            coords=coords,
+            attrs={
+                'maintag': self._jacobian_quantity.maintag,
+                'subtag': self._jacobian_quantity.subtag,
+                'subsubtag': self._jacobian_quantity.subsubtag,
+                'analytical': self._jacobian_quantity.analytical,
+                'mode': self._jacobian_quantity.mode,
+                'perturbation': self._jacobian_quantity.perturbation,
+            }
+        )
+        return ds
 
     @property
     def shape(self):
@@ -364,16 +435,51 @@ class Polyfit(RetrievalQuantity):
         if eo is None:
             eo = ws.retrieval_eo.value
         if es is None:
-            es = ws.retrieval_es.value
+            es = ws.retrieval_ss.value
 
         self._x = [x[s] for s in self._slice]
         self._avkm = [avk[s, s] for s in self._slice]
         self._eo = [eo[s] for s in self._slice]
         self._es = [es[s] for s in self._slice]
 
+    def to_xarray(self):
+        prefix = self.slug + '_'
+        grid_names = ('poly_order', 'observation')
+        grids = self.grids
+        flat_grid_name = prefix + 'grid'
+
+        coords = {n: c for n, c in zip(grid_names, grids)}
+
+        ds = xr.Dataset(
+            data_vars={
+                prefix + 'x': (grid_names, np.stack(self.x)),
+                prefix + 'mr': (grid_names, np.stack(self.mr)),
+                prefix + 'eo': (grid_names, np.stack(self.eo)),
+                prefix + 'es': (grid_names, np.stack(self.es)),
+                prefix + 'avkm': ((grid_names[0], flat_grid_name, flat_grid_name + '_avk'), np.stack(self.avkm)),
+            },
+            coords=coords,
+            attrs={
+                'maintag': self._jacobian_quantity[0].maintag,
+                'subtag': '',
+                'subsubtag': '',
+                'analytical': self._jacobian_quantity[0].analytical,
+                'mode': self._jacobian_quantity[0].mode,
+                'perturbation': self._jacobian_quantity[0].perturbation,
+            }
+        )
+        return ds
+
     @property
     def slug(self):
         return 'poly_fit'
+
+    @property
+    def grids(self):
+        jq_grids = self._jacobian_quantity[0].grids
+        if len(jq_grids[0]) > 1 or len(jq_grids[1]) > 1 or len(jq_grids[2]) > 1:
+            raise NotImplementedError()
+        return [np.arange(self.poly_order+1), np.array(jq_grids[-1], dtype=np.int)]
 
     @property
     def covmat(self):

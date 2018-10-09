@@ -38,8 +38,31 @@ def _setup_default_controller():
     ac.set_observations([Observation(time=0, lat=0, lon=0, alt=12e3, za=90 - 22, aa=azimuth)
                          for azimuth in [90, -90]])
     ac.checked_calc()
-    ac.y_calc()
 
+    return ac
+
+
+def _setup_retrieved_controller():
+    ac = _setup_default_controller()
+
+    y0, y1 = ac.y_calc()
+    offset = 3
+    ac.set_y([y0+offset, y1+offset])
+
+    # Variance of y
+    y_vars = 0.01 * np.ones(ac.n_y)
+
+    # O3 covmat and retrieval setup
+    sx1 = covmat.covmat_diagonal_sparse(1e-6 * np.ones_like(ac.p_grid))
+    rq1 = AbsSpecies('O3', ac.p_grid, np.array([0]), np.array([0]), covmat=sx1, unit='vmr')
+
+    sx2_0 = covmat.covmat_diagonal(np.array([5, 5]))
+    sx2_1 = covmat.covmat_diagonal(np.array([2, 2]))
+    rq2 = Polyfit(1, [sx2_0, sx2_1])
+
+    ac.define_retrieval([rq1, rq2], y_vars)
+
+    ac.oem(method='gn')
     return ac
 
 
@@ -105,3 +128,15 @@ def test_retrieval_quantity_indices():
 
     # Check if the baseline has been retrieved
     assert np.all(np.abs(rq2.x[0] - offset) < 0.01)
+
+
+def test_retrieval_quantity_xarray():
+    ac = _setup_retrieved_controller()
+    rq1, rq2 = ac.retrieval_quantities
+    level2 = ac.level2_xarray()
+    assert 'y_baseline' in level2
+    assert 'o3_offset' in level2
+    assert 'observation' in level2
+
+    mr = level2['o3_avkm'].sum(dim='o3_p_avk').values
+    assert np.allclose(mr, rq1.mr)

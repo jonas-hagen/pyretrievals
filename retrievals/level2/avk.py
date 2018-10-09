@@ -18,6 +18,8 @@ def fwhm(x, y):
 
     # FWHM
     r = spline.roots()
+    if len(r) < 2:
+        return np.nan
     center = r[np.argsort(np.abs(r - max_x))[0:2]]
     fwhm = np.abs(center[1] - center[0])
     return fwhm
@@ -27,6 +29,8 @@ def peak(x, y):
     """Calculate the FWHM and peak height of a vector y with corresponding coordinates x."""
     spline = InterpolatedUnivariateSpline(x, y, k=4, ext='raise')
     extrema = spline.derivative().roots()
+    if len(extrema) < 1:
+        return np.nan
     max_x = extrema[np.argmax(spline(extrema))]
     return max_x
 

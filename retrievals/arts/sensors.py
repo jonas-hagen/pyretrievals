@@ -25,6 +25,11 @@ class AbstractSensor(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def f_backend(self):
+        pass
+
 
 class SensorOff(AbstractSensor):
     """Sensor that does nothing."""
@@ -41,6 +46,10 @@ class SensorOff(AbstractSensor):
 
         return sensor_response_agenda
 
+    @property
+    def f_backend(self):
+        return None
+
 
 class SensorFFT(AbstractSensor):
     """
@@ -52,7 +61,7 @@ class SensorFFT(AbstractSensor):
         :param resolution: The frequency resolution of the FFTS in Hz
         :param num_channels: Number of channels with nonzero response, default: 10
         """
-        self.f_backend = f_backend
+        self._f_backend = f_backend
         self.resolution = resolution
         self.num_channels = num_channels
 
@@ -84,6 +93,10 @@ class SensorFFT(AbstractSensor):
 
         return sensor_response_agenda
 
+    @property
+    def f_backend(self):
+        return self._f_backend
+
 
 class SensorGaussian(AbstractSensor):
     """Sensor with Gaussian Channel response."""
@@ -93,7 +106,7 @@ class SensorGaussian(AbstractSensor):
         :param f_backend: Backend frequencies
         :param fwhm: Full width at half maximum (resolution)
         """
-        self.f_backend = f_backend
+        self._f_backend = f_backend
         self.fwhm = fwhm
 
     def apply(self, ws):
@@ -111,3 +124,7 @@ class SensorGaussian(AbstractSensor):
             ws.sensor_responseBackend()
 
         return sensor_response_agenda
+
+    @property
+    def f_backend(self):
+        return self._f_backend

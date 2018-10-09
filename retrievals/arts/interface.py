@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 from scipy import sparse
 from collections import namedtuple
 
@@ -8,7 +9,6 @@ load_dotenv(dotenv_path='./.env')
 
 from typhon.arts.workspace import Workspace, arts_agenda
 from typhon.arts import xml
-from typhon.arts.catalogues import Sparse
 
 from retrievals.arts import boilerplate
 from retrievals.arts import retrieval
@@ -33,6 +33,8 @@ class ArtsController:
     def __init__(self):
         self.ws = Workspace()
         self.retrieval_quantities = []
+        self._sensor = None
+        self._observations = []
 
     def setup(self, atmosphere_dim=1, iy_unit='RJBT', ppath_lmax=-1, stokes_dim=1):
         """
@@ -199,6 +201,7 @@ class ArtsController:
         self.ws.sensor_time = np.array([obs.time for obs in observations])
         self.ws.sensor_los = np.array([[obs.za, obs.aa] for obs in observations])
         self.ws.sensor_pos = np.array([[obs.alt, obs.lat, obs.lon] for obs in observations])
+        self._observations = observations
 
     def set_y(self, ys):
         y = np.concatenate(ys)
@@ -210,6 +213,7 @@ class ArtsController:
         :param sensor:
         :type sensor: retrievals.arts.sensors.AbstractSensor
         """
+        self._sensor = sensor
         sensor.apply(self.ws)
 
     def y_calc(self, jacobian_do=False):
@@ -222,8 +226,7 @@ class ArtsController:
             raise NotImplementedError('Jacobian not implemented yet.')
             # self.ws.jacobian_do = 1
         self.ws.yCalc()
-        y = np.copy(self.ws.y.value)
-        return np.split(y, self.n_obs)
+        return self.y
 
     def define_retrieval(self, retrieval_quantities, y_vars):
         """
@@ -280,6 +283,8 @@ class ArtsController:
                display_progress=1 if display_progress else 0)
 
         if self.oem_converged:  # Just checks if dxdy is initialized
+            ws.x2artsAtmAndSurf()
+            ws.x2artsSensor()
             ws.avkCalc()
             ws.covmat_ssCalc()
             ws.covmat_soCalc()
@@ -288,12 +293,32 @@ class ArtsController:
             x = ws.x.value
             avk = ws.avk.value
             eo = ws.retrieval_eo.value
-            es = ws.retrieval_eo.value
+            es = ws.retrieval_ss.value
 
             for rq in self.retrieval_quantities:
                 rq.extract_result(x, avk, eo, es)
 
         return self.oem_converged
+
+    def level2_xarray(self):
+        ds = xr.merge([rq.to_xarray() for rq in self.retrieval_quantities])
+
+        # Spectra
+        f_backend = self._sensor.f_backend if self._sensor.f_backend is not None else self.f_grid
+        ds['f'] = ('f', f_backend)
+        ds['y'] = (('observation', 'f'), np.stack(self.y))
+        ds['yf'] = (('observation', 'f'), np.stack(self.yf))
+
+        y_baseline = self.y_baseline
+        if y_baseline is not None:
+            ds['y_baseline'] = (('observation', 'f'), np.stack(self.y_baseline))
+
+        # Observations
+        for f in Observation._fields:
+            values = np.array([getattr(obs, f) for obs in self._observations])
+            ds['obs_'+f] = ('observation', values)
+
+        return ds
 
     @property
     def p_grid(self):
@@ -308,6 +333,10 @@ class ArtsController:
         return self.ws.lon_grid.value
 
     @property
+    def f_grid(self):
+        return self.ws.f_grid.value
+
+    @property
     def n_lat(self):
         return len(self.ws.lat_grid.value)
 
@@ -318,6 +347,24 @@ class ArtsController:
     @property
     def n_y(self):
         return len(self.ws.y.value)
+
+    @property
+    def y(self):
+        y = np.copy(self.ws.y.value)
+        return np.split(y, self.n_obs)
+
+    @property
+    def yf(self):
+        yf = np.copy(self.ws.yf.value)
+        return np.split(yf, self.n_obs)
+
+    @property
+    def y_baseline(self):
+        if self.ws.y_baseline.initialized:
+            bl = np.copy(self.ws.y_baseline.value)
+            return np.split(bl, self.n_obs)
+        else:
+            return None
 
     @property
     def n_obs(self):
