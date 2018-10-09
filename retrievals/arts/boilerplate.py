@@ -4,6 +4,7 @@ Some useful tools to populate and work with an Arts Workspace.
 import os
 from tempfile import TemporaryDirectory
 from scipy import sparse
+import numpy as np
 
 from typhon.arts.workspace import Workspace, arts_agenda
 from typhon.arts.catalogues import Sparse
@@ -118,6 +119,12 @@ def set_variable_by_xml(ws, variable, data):
         fn = os.path.join(path, 'data.xml')
         xml.save(data, fn, format='binary')
         ws.ReadXML(variable, fn)
+
+
+def clear_sparse(ws, variable):
+    """Set a sparse matrix to empty."""
+    ws.Delete(variable)
+    ws.DiagonalMatrix(variable, np.array([]))
 
 
 @arts_agenda

@@ -11,7 +11,7 @@ TEST_DATA_PATH = os.path.join(os.path.dirname(__file__), 'test_data')
 
 
 def _setup_default_controller():
-    """Provide an Arts controller with a complete Workspace."""
+    """Provide an Arts controller with a complete Workspace and two retrieval quantities."""
     f0 = 142.17504e9
 
     ac = ArtsController()
@@ -21,7 +21,7 @@ def _setup_default_controller():
         ['O3', ],
     )
     ac.set_grids(
-        f_grid=np.linspace(-50e6, 50e6, 300) + f0,
+        f_grid=np.linspace(-500e6, 500e6, 300) + f0,
         p_grid=np.logspace(5, -1, 100),
         lat_grid=np.linspace(-4, 4, 5),
         lon_grid=np.linspace(-4, 4, 5)
@@ -32,12 +32,13 @@ def _setup_default_controller():
     atm = Atmosphere.from_arts_xml(basename)
     ac.set_atmosphere(atm)
 
-    f_backend = np.linspace(-40e6, 40e6, 600) + f0
-    ac.set_sensor(SensorGaussian(f_backend, np.array([10e3, ])))
+    f_backend = np.linspace(-400e6, 400e6, 600) + f0
+    ac.set_sensor(SensorGaussian(f_backend, np.array([800e6/600, ])))
 
     ac.set_observations([Observation(time=0, lat=0, lon=0, alt=12e3, za=90 - 22, aa=azimuth)
                          for azimuth in [90, -90]])
     ac.checked_calc()
+
     return ac
 
 
@@ -47,8 +48,8 @@ def test_y_calc():
     y_east, y_west = ac.y_calc()
 
     assert len(y_east) == 600
-    assert np.abs(y_east[0] - 15) < 1
-    assert np.abs(y_east[300] - 38) < 1
+    assert np.abs(y_east[0] - 1.5) < 1
+    assert np.abs(y_east[300] - 35) < 1
 
 
 def test_retrieval():
@@ -70,9 +71,11 @@ def test_retrieval():
     ac.ws.Tensor4AddScalar(ac.ws.vmr_field, ac.ws.vmr_field, 0.5e-6)
     x_a = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
 
-    ac.oem(method='li')
+    ac.oem(method='gn')
+    ac.ws.x2artsAtmAndSurf()
     x_hat = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
 
     # Compare values in altitudes between approx. 19 to 47 km
-    assert np.allclose(x_true[20:50], x_hat[20:50], atol=0.1e-6)
-    assert np.allclose(x_a[20:50]-0.5e-6, x_hat[20:50], atol=0.1e-6)
+    poi = slice(22, 45)
+    assert np.allclose(x_true[poi], x_hat[poi], atol=0.1e-6)
+    assert np.allclose(x_a[poi]-0.5e-6, x_hat[poi], atol=0.1e-6)

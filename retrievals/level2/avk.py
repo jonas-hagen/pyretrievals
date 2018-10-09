@@ -4,7 +4,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from numba import jit
 
 
-def measurement_response(avkm):
+def avkm_mr(avkm):
     """Calculate measurement response, which is the sum of the rows of the AVKM."""
     return np.sum(avkm, axis=1)
 
@@ -21,6 +21,14 @@ def fwhm(x, y):
     center = r[np.argsort(np.abs(r - max_x))[0:2]]
     fwhm = np.abs(center[1] - center[0])
     return fwhm
+
+
+def peak(x, y):
+    """Calculate the FWHM and peak height of a vector y with corresponding coordinates x."""
+    spline = InterpolatedUnivariateSpline(x, y, k=4, ext='raise')
+    extrema = spline.derivative().roots()
+    max_x = extrema[np.argmax(spline(extrema))]
+    return max_x
 
 
 def avkm_fwhm(x, avkm):
@@ -42,7 +50,7 @@ def avkm_peak(x, avkm):
     peaks = np.zeros((n_rows,))
     for i in range(n_rows):
         y = avkm[i, :]
-        peaks[i] = x[np.argmax(y)]
+        peaks[i] = peak(x, y)  # x[np.argmax(y)]
     return peaks
 
 

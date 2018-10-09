@@ -2,6 +2,7 @@ from glob import glob
 import os
 import re
 
+import numpy as np
 import xarray as xr
 
 from typhon.arts import xml
@@ -22,6 +23,14 @@ DEFAULT_TO_ARTS = {
     'lat': 'Latitude',
     'lon': 'Longitude',
 }
+
+
+def z2p_simple(z):
+    return 10 ** (5 - z / 16e3)
+
+
+def p2z_simple(p):
+    return 16e3 * (5 - np.log10(p))
 
 
 class Atmosphere:

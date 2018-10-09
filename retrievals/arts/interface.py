@@ -32,6 +32,7 @@ class ArtsController:
 
     def __init__(self):
         self.ws = Workspace()
+        self.retrieval_quantities = []
 
     def setup(self, atmosphere_dim=1, iy_unit='RJBT', ppath_lmax=-1, stokes_dim=1):
         """
@@ -199,6 +200,10 @@ class ArtsController:
         self.ws.sensor_los = np.array([[obs.za, obs.aa] for obs in observations])
         self.ws.sensor_pos = np.array([[obs.alt, obs.lat, obs.lon] for obs in observations])
 
+    def set_y(self, ys):
+        y = np.concatenate(ys)
+        self.ws.y = y
+
     def set_sensor(self, sensor):
         """
         Set the sensor.
@@ -233,6 +238,7 @@ class ArtsController:
         ws.retrievalDefInit()
 
         # Retrieval quantities
+        self.retrieval_quantities = retrieval_quantities
         for rq in retrieval_quantities:
             rq.apply(ws)
 
@@ -274,11 +280,18 @@ class ArtsController:
                display_progress=1 if display_progress else 0)
 
         if self.oem_converged:  # Just checks if dxdy is initialized
-            ws.x2artsAtmAndSurf()
-            ws.x2artsSensor()
             ws.avkCalc()
             ws.covmat_ssCalc()
             ws.covmat_soCalc()
+            ws.retrievalErrorsExtract()
+
+            x = ws.x.value
+            avk = ws.avk.value
+            eo = ws.retrieval_eo.value
+            es = ws.retrieval_eo.value
+
+            for rq in self.retrieval_quantities:
+                rq.extract_result(x, avk, eo, es)
 
         return self.oem_converged
 

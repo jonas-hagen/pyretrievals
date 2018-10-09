@@ -17,10 +17,10 @@ def test_fwhm():
 
 
 def test_avkm_fwhm():
-    n = 100
+    n = 200
     fwhms = np.linspace(5, 30, n)
     x, _ = _make_avk(n)
-    avks = [_make_avk(n, fwhm=f) for f in fwhms]
+    avks = [_make_avk(n, fwhm=f)[1] for f in fwhms]
     avkm = np.vstack(avks)
     fwhm = level2.avkm_fwhm(x, avkm)
     assert np.allclose(fwhm, fwhms, atol=0.1)
@@ -31,7 +31,7 @@ def test_avkm_peak():
     x, avk = _make_avk(n)
     avkm = np.vstack(n * [avk, ])
     x_peak = level2.avkm_peak(x, avkm)
-    assert np.allclose(x_peak, 50, atol=0.01)
+    assert np.allclose(x_peak, 50, atol=0.001)
 
 
 def test_avkm_offset():
@@ -39,4 +39,4 @@ def test_avkm_offset():
     x, avk = _make_avk(n)
     avkm = np.vstack(n * [avk, ])
     offset = level2.avkm_offset(x, avkm)
-    assert np.allclose(offset, np.linspace(-50, 50, 100), atol=0.01)
+    assert np.allclose(offset, np.linspace(-50, 50, 100), atol=0.001)
