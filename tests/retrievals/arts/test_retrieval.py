@@ -121,6 +121,7 @@ def test_retrieval_quantity_indices():
     assert rq2._slice == [slice(a, b) for a, b in [(n_p, n_p + 2), (n_p + 2, n_p + 4)]]
 
     ac.oem(method='gn')
+    assert ac.oem_converged
 
     # Check ozone retrieval
     assert rq1.avkm.shape == (n_p, n_p)
@@ -132,6 +133,8 @@ def test_retrieval_quantity_indices():
 
 def test_retrieval_quantity_xarray():
     ac = _setup_retrieved_controller()
+    assert ac.oem_converged
+
     rq1, rq2 = ac.retrieval_quantities
     level2 = ac.level2_xarray()
     assert 'y_baseline' in level2

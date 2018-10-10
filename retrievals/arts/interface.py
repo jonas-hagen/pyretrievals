@@ -27,6 +27,14 @@ def _is_desc(x):
 Observation = namedtuple('Observation', ['time', 'za', 'aa', 'lat', 'lon', 'alt'])
 
 
+class OemException(Exception):
+    pass
+
+
+class OemNotConverged(OemException):
+    pass
+
+
 class ArtsController:
     """The equivalent for a cfile."""
 
@@ -279,26 +287,31 @@ class ArtsController:
             ws.Delete(ws.dxdy)  # This is a workaround to see if OEM converged
 
         ws.xaStandard()
-        ws.OEM(method=method, max_iter=max_iter, stop_dx=stop_dx, lm_ga_settings=lm_ga_settings,
-               display_progress=1 if display_progress else 0)
+        try:
+            ws.OEM(method=method, max_iter=max_iter, stop_dx=stop_dx, lm_ga_settings=lm_ga_settings,
+                   display_progress=1 if display_progress else 0)
+        except Exception as e:
+            raise OemException(e)
 
-        if self.oem_converged:  # Just checks if dxdy is initialized
-            ws.x2artsAtmAndSurf()
-            ws.x2artsSensor()
-            ws.avkCalc()
-            ws.covmat_ssCalc()
-            ws.covmat_soCalc()
-            ws.retrievalErrorsExtract()
+        if not self.oem_converged:  # Just checks if dxdy is initialized
+            return False
 
-            x = ws.x.value
-            avk = ws.avk.value
-            eo = ws.retrieval_eo.value
-            es = ws.retrieval_ss.value
+        ws.x2artsAtmAndSurf()
+        ws.x2artsSensor()
+        ws.avkCalc()
+        ws.covmat_ssCalc()
+        ws.covmat_soCalc()
+        ws.retrievalErrorsExtract()
 
-            for rq in self.retrieval_quantities:
-                rq.extract_result(x, avk, eo, es)
+        x = ws.x.value
+        avk = ws.avk.value
+        eo = ws.retrieval_eo.value
+        es = ws.retrieval_ss.value
 
-        return self.oem_converged
+        for rq in self.retrieval_quantities:
+            rq.extract_result(x, avk, eo, es)
+
+        return True
 
     def level2_xarray(self):
         ds = xr.merge([rq.to_xarray() for rq in self.retrieval_quantities])

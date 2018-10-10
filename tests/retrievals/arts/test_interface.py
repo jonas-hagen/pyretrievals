@@ -72,6 +72,7 @@ def test_retrieval():
     x_a = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
 
     ac.oem(method='gn')
+    assert ac.oem_converged
     ac.ws.x2artsAtmAndSurf()
     x_hat = np.copy(ac.ws.vmr_field.value[0, :, 2, 0])
 

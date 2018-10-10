@@ -502,14 +502,14 @@ class SlicedArray:
     def __getitem__(self, item):
         if isinstance(item, tuple):
             if len(item) == len(self._values.shape):
-                idx = [slice(*self.slugs[it]) for it in item]
+                idx = tuple(slice(*self.slugs[it]) for it in item)
                 return self.values[idx]
             else:
                 raise ValueError('Number of indexers must be one or be equal to number of dimensions.')
         else:
             a, b = self.slugs[item]
             n_dims = len(self._values.shape)
-            return self._values[n_dims * [slice(a, b)]]
+            return self._values[tuple(n_dims * [slice(a, b)])]
 
     @property
     def values(self):
