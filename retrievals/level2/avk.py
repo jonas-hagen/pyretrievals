@@ -48,6 +48,7 @@ def avkm_fwhm(x, avkm):
 
 
 def avkm_peak(x, avkm):
+    """Calculate the peak height of AVKs in avkm in units of coordinate vector x."""
     n_rows, n_cols = avkm.shape
     if x.shape != (n_cols,):
         raise ValueError('Size of coordinate must match number of columns of AVKM.')
@@ -59,6 +60,7 @@ def avkm_peak(x, avkm):
 
 
 def avkm_offset(x, avkm):
+    """Calculate the offset of nominal height to peak height of AVKs in avkm in units of coordinate vector x."""
     n_rows, n_cols = avkm.shape
     if n_rows != n_cols:
         ValueError('AVKM must be square matrix.')

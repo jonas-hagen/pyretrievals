@@ -12,7 +12,7 @@ class AbstractSensor(ABC):
     """
 
     def apply(self, ws):
-        """Copy and execute sensor response agenda. Subclasses need to call apply of base class."""
+        """Copy and execute sensor response agenda."""
         ws.Copy(ws.sensor_response_agenda, self.sensor_response_agenda)
         ws.AgendaExecute(ws.sensor_response_agenda)
 
@@ -20,8 +20,11 @@ class AbstractSensor(ABC):
     @abstractmethod
     def sensor_response_agenda(self):
         """
-        Build the sensor response agenda.
-        :return: An arts_agenda decorated function taking a Workspace as single argument.
+        The sensor response agenda.
+
+        :type: typhon.arts.workspace.agendas.Agenda
+
+        .. seealso:: Decorator :py:func:`typhon.arts.workspace.workspace.arts_agenda`.
         """
         pass
 
@@ -53,11 +56,12 @@ class SensorOff(AbstractSensor):
 
 class SensorFFT(AbstractSensor):
     """
-    Sensor with channel response for an FFT Spectrometer with sinc^2 response.
+    Sensor with channel response for an FFT Spectrometer with :math:`\mathrm{sinc}^2` response.
     """
 
     def __init__(self, f_backend, resolution, num_channels=10):
         """
+        :param f_backend: The backend frequency vector.
         :param resolution: The frequency resolution of the FFTS in Hz
         :param num_channels: Number of channels with nonzero response, default: 10
         """

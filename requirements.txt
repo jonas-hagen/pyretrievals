@@ -6,4 +6,5 @@ numba
 pytest
 python-dotenv
 git+https://github.com/atmtools/typhon.git
+sphinx
 -e .

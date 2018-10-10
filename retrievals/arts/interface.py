@@ -25,18 +25,21 @@ def _is_desc(x):
 
 
 Observation = namedtuple('Observation', ['time', 'za', 'aa', 'lat', 'lon', 'alt'])
+"""
+Geometry related to an observation.
+Fields `za` and `aa` are the azimuth and zenith angle of the line-of-sight.
+Fields `lat`, `lon`, `alt` describe the position of the sensor.
+Usually, `time` can be set to `0`.
+"""
 
 
 class OemException(Exception):
-    pass
-
-
-class OemNotConverged(OemException):
+    """Wrapper for all exceptions that happen during a OEM WSM call."""
     pass
 
 
 class ArtsController:
-    """The equivalent for a cfile."""
+    """High level interface to ARTS."""
 
     def __init__(self):
         self.ws = Workspace()

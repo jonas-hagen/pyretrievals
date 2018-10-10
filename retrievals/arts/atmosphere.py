@@ -34,7 +34,9 @@ def p2z_simple(p):
 
 
 class Atmosphere:
-    #TODO: Unequal grids for different species
+    """
+    Represents the atmospheric state, including absorbing species, wind and temperature and altitude fields.
+    """
 
     def __init__(self, data):
         self.data = self.check_and_normalize_data(data)
@@ -54,14 +56,25 @@ class Atmosphere:
 
     @property
     def lat(self):
+        """
+        The latitude grid.
+
+        :type: numpy.ndarray
+        """
         return self.data[LAT_NAME].values
 
     @property
     def lon(self):
+        """
+        The longitude grid.
+
+        :type: numpy.ndarray
+        """
         return self.data[LON_NAME].values
 
     @property
     def dimensions(self):
+        """Dimensionality is 1, if only one (lat, lon) coordinate present, 3 otherwise."""
         if len(self.lat) == 1 and len(self.lon) == 1:
             return 1
         if len(self.lat) > 1 or len(self.lon) > 1:
@@ -69,13 +82,29 @@ class Atmosphere:
 
     @property
     def t_field(self):
+        """
+        The temperature field.
+
+        :type: typhon.arts.griddedfield.GriddedField3
+        """
         return self._gf_from_xarray(self.data[T_NAME].rename(DEFAULT_TO_ARTS))
 
     @property
     def z_field(self):
+        """
+        The geometric altitude field.
+
+        :type: typhon.arts.griddedfield.GriddedField3
+        """
         return self._gf_from_xarray(self.data[Z_NAME].rename(DEFAULT_TO_ARTS))
 
     def wind_field(self, component):
+        """
+        Gives a specific component of the wind field.
+
+        :param component: One of `u`, `v`, `w`
+        :rtype: typhon.arts.griddedfield.GriddedField3
+        """
         component = str.lower(component)
         component_to_name = {'u': U_NAME, 'v': V_NAME, 'w': W_NAME}
         var_name = component_to_name[component]
@@ -84,6 +113,12 @@ class Atmosphere:
         return self._gf_from_xarray(self.data[var_name].rename(DEFAULT_TO_ARTS))
 
     def vmr_field(self, species):
+        """
+        Gives the VMR field for a species.
+
+        :param species: Species identifier, e.g. o3 (lowercase O3, for ozone)
+        :rtype: typhon.arts.griddedfield.GriddedField3
+        """
         species = str.lower(species)
         if species not in self.data:
             raise KeyError('No data for absorption species ' + species)
@@ -91,6 +126,14 @@ class Atmosphere:
 
     @classmethod
     def from_dataset(cls, ds):
+        """
+        Create atmosphere from a :py:class:`xarray.Dataset`.
+
+        :param ds: The dataset must have the variables `t`, `z`, `pressure`, `lat`, `lon` and can have
+                   absorbing species like `o3` (all lowercase).
+        :type ds: xarray.Dataset
+        :rtype: Atmosphere
+        """
         ds = ds.copy()
         return cls(ds)
 
@@ -99,9 +142,9 @@ class Atmosphere:
         """
         Read from ARTS XML data, all files matching 'prefix*.ext' are read.
 
-        :param str prefix: Prefix (/path/something)
-        :param str ext: File extension, mostly '.xml' or '.xml.gz. Default: '.xml
-        :return: Atmosphere
+        :param str prefix: Prefix (`/path/something`)
+        :param str ext: File extension, mostly '.xml' or '.xml.gz. Default: '.xml'
+        :rtype: Atmosphere
         """
         path = os.path.dirname(prefix)
         basename = os.path.basename(prefix)

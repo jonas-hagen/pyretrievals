@@ -12,7 +12,7 @@ def _make_avk(n, fwhm=15, x0=50):
 
 def test_fwhm():
     x, avk = _make_avk(100)
-    fwhm = level2.fwhm(x, avk)
+    fwhm = level2.avk.fwhm(x, avk)
     assert abs(fwhm - 15) < 0.1
 
 

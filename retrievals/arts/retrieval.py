@@ -76,6 +76,12 @@ class RetrievalQuantity:
     """A generic retrieval quantity."""
 
     def __init__(self, kind, covmat, **kwargs):
+        """
+        :param kind: The kind is used to identify the corresponding WSMs, for example for a kind of `Sinefit` the WSM
+                     `retrievalAddSinefit` would be called upon apply with the keyword arguments.
+        :param covmat: The covariance matrix for the retrieval.
+        :param kwargs: Arguments to the `retrievalAdd...` WSM.
+        """
         self._kind = kind
         self._covmat = covmat
         self._args = kwargs
@@ -93,9 +99,7 @@ class RetrievalQuantity:
 
     def apply(self, ws):
         """
-        Add this retrieval quantity to a Workspace and extract the indices from the jacobian quantities in the
-        workspace. Calls `self.apply_retrieval()` and `self.apply_covmat(). Subclasses should override these methods
-        instead of just `self.apply()`.
+        Add this retrieval quantity to a Workspace and extract the indices from the jacobian quantities.
         """
         if self._is_applied:
             raise Exception('Same retrieval quantity cannot be added twice to the same workspace.')
@@ -125,7 +129,10 @@ class RetrievalQuantity:
         ws.covmat_sxAddBlock(block=ws.covmat_block)
 
     def extract_result(self, x=None, avk=None, eo=None, es=None):
-        """Extract the result and the corresponding values form the Workspace."""
+        """
+        Extract the result and the corresponding values form the Workspace.
+        If the arguments are `None`, the variables are copied from the associated Workspace.
+        """
         ws = self._ws
         if x is None:
             x = ws.x.value
@@ -142,6 +149,11 @@ class RetrievalQuantity:
         self._es = es[self._slice]
 
     def to_xarray(self):
+        """
+        Export this retrieval quantity.
+
+        :rtype: xarray.Dataset
+        """
         prefix = self.slug + '_'
         shape = self.shape
         grid_names = [prefix + 'grid' + str(i+1) for i in range(len(self.shape))]
@@ -180,22 +192,27 @@ class RetrievalQuantity:
 
     @property
     def args(self):
+        """The arguments for the `retrievalAdd...` WSM."""
         return self._args
 
     @property
     def num_elem(self):
+        """Number of elements, product of all grid lengths."""
         return self.covmat.shape[0]
 
     @property
     def grids(self):
+        """Associated grids."""
         return self._jacobian_quantity.grids
 
     @property
     def shape(self):
+        """Shape of grids."""
         return tuple(map(len, self.grids))
 
     @property
     def ws(self):
+        """Associated workspace. Set by :py:meth:`apply`."""
         return self._ws
 
     def __str__(self):
@@ -203,7 +220,7 @@ class RetrievalQuantity:
 
     @property
     def slug(self):
-        """Create a slug. Useful for serialisation."""
+        """A slug according to the kind of this retrieval quantity, useful for serialisation."""
         jq = self._jacobian_quantity
         if jq.maintag == 'Absorption species':
             return str.lower(jq.subtag)  # this is the species e.g. O3
@@ -216,32 +233,46 @@ class RetrievalQuantity:
 
     @property
     def x(self):
+        """The retrieved values. Available after :py:meth:`extract_results`."""
         return self._x
 
     @property
     def avkm(self):
+        """The averaging kernel matrix. Available after :py:meth:`extract_results`."""
         return self._avkm
 
     @property
     def mr(self):
+        """The measurement response. Available after :py:meth:`extract_results`."""
         return level2.avkm_mr(self._avkm)
 
     @property
     def eo(self):
+        """The retrieval error associated with the observational system. Available after :py:meth:`extract_results`."""
         return self._eo
 
     @property
     def es(self):
+        """The smoothing error. Available after :py:meth:`extract_results`."""
         return self._es
 
 
 class GriddedRetrievalQuantity(RetrievalQuantity):
-    def __init__(self, kind, covmat, **kwargs):
-        if 'g1' not in kwargs or 'g2' not in kwargs or 'g3' not in kwargs:
-            raise ValueError('Grids g1, g2 and g3 are required for gridded retrieval quantities.')
-        p_grid = kwargs['g1']
-        lat_grid = kwargs['g2']
-        lon_grid = kwargs['g3']
+    """Retrieval quantity that is retrieved on a spatial grid."""
+
+    def __init__(self, kind, p_grid, lat_grid, lon_grid, covmat, **kwargs):
+        """
+        :param kind: The kind is used to identify the corresponding WSMs, for example for a kind of `Sinefit` the WSM
+                     `retrievalAddSinefit` would be called upon apply with the keyword arguments.
+        :param p_grid: Pressure grid
+        :param lat_grid: Latitude grid
+        :param lon_grid: Longitude grid
+        :param covmat: The covariance matrix for the retrieval.
+        :param kwargs: Arguments to the `retrievalAdd...` WSM.
+        """
+        kwargs['g1'] = p_grid
+        kwargs['g2'] = lat_grid
+        kwargs['g3'] = lon_grid
         if not covmat.shape == _covmat_shape(p_grid, lat_grid, lon_grid):
             expected = _covmat_shape(p_grid, lat_grid, lon_grid)
             raise ValueError(
@@ -335,13 +366,16 @@ class GriddedRetrievalQuantity(RetrievalQuantity):
 
 
 class AbsSpecies(GriddedRetrievalQuantity):
+    """Absorption species."""
+
     def __init__(self, species, p_grid, lat_grid, lon_grid, covmat,
                  method='analytical', unit='rel', for_species_tag=1, dx=0.001):
-        super().__init__('AbsSpecies', covmat,
+        super().__init__('AbsSpecies',
+                         p_grid=p_grid,
+                         lat_grid=lat_grid,
+                         lon_grid=lon_grid,
+                         covmat=covmat,
                          species=species,
-                         g1=p_grid,
-                         g2=lat_grid,
-                         g3=lon_grid,
                          method=method,
                          unit=unit,
                          for_species_tag=for_species_tag,
@@ -357,12 +391,15 @@ class AbsSpecies(GriddedRetrievalQuantity):
 
 
 class Wind(GriddedRetrievalQuantity):
+    """Wind."""
+
     def __init__(self, component, p_grid, lat_grid, lon_grid, covmat, dfrequency=0.1):
-        super().__init__('Wind', covmat,
+        super().__init__('Wind',
+                         p_grid=p_grid,
+                         lat_grid=lat_grid,
+                         lon_grid=lon_grid,
+                         covmat=covmat,
                          component=component,
-                         g1=p_grid,
-                         g2=lat_grid,
-                         g3=lon_grid,
                          dfrequency=dfrequency)
 
     @property
@@ -375,6 +412,8 @@ class Wind(GriddedRetrievalQuantity):
 
 
 class FreqShift(RetrievalQuantity):
+    """Backend frequency shift."""
+
     def __init__(self, sx, df=100e3):
         covmat = np.array([sx])
         super().__init__('FreqShift', covmat, df=df)
@@ -389,6 +428,8 @@ class FreqShift(RetrievalQuantity):
 
 
 class Polyfit(RetrievalQuantity):
+    """Polynomial baseline fit."""
+    
     def __init__(self, poly_order, covmats, pol_variation=True, los_variation=True, mblock_variation=True):
         if len(covmats) != poly_order + 1:
             raise ValueError('Must provide (poly_order + 1) covariance matrices.')
