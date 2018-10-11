@@ -1,31 +1,30 @@
 Atmospheric data
 ================
 
-.. py:module:: retrievals.data
-
 .. automodule:: retrievals.data
 
 
-Summary
--------
+General utils
+-------------
 
-Indexing
-''''''''
+.. py:module:: retrievals.data
 
-.. py:module:: retrievals.data.index
-.. autosummary::
-    :nosignatures:
-
-    IntervalDict
-    nc_index
+.. autofunction:: date_glob
 
 
-Reference
----------
+ECMWF Specific
+--------------
 
-.. py:module:: retrievals.data.index
+.. py:module:: retrievals.data.ecmwf
+.. automodule:: retrievals.data.ecmwf
 
-.. autoclass:: IntervalDict
+.. py:data:: hybrid_level
+
+    :py:class:`xarray.Dataset` with all `ECMWF hybrid level definition`_ parameters for all levels.
+
+.. autoclass:: ECMWFLocationFileStore
     :members:
 
-.. autofunction:: nc_index
+
+
+.. _ECMWF hybrid level definition: https://www.ecmwf.int/en/forecasts/documentation-and-support/137-model-levels

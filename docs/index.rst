@@ -24,6 +24,8 @@ Currently this is limited to ground based microwave measurements but might also 
     :caption: Contents:
 
     quickstart
+    atmospheric_data
+    scripts
     reference
    
 

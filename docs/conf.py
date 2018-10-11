@@ -86,7 +86,9 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'page_width': '1000px',
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -193,6 +195,7 @@ intersphinx_mapping = {
     'numpy': ('https://docs.scipy.org/doc/numpy', None),
     'matplotlib': ('https://matplotlib.org', None),
     'xarray': ('http://xarray.pydata.org/en/stable', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
     'typhon': ('http://www.radiativetransfer.org/misc/typhon/doc', None),
 }
 

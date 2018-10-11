@@ -1,0 +1,50 @@
+{
+  "BERN": {
+    "lat": 46.94790,
+    "lon": 7.444600,
+    "altitude": 575,
+    "timezone": "Europe/Zurich",
+    "desc": "Building Exakte Wissenschaften in Bern, Switzerland"
+  },
+  "MAIDO": {
+    "lat": -21.079816,
+    "lon": 55.383091,
+    "altitude": 2158,
+    "timezone": "Indian/Reunion",
+    "desc": "Maïdo Observatory on La Réunion (indian ocean), France"
+  },
+  "ALOMAR": {
+    "lat": 69.2785,
+    "lon": 16.0089,
+    "altitude": 370,
+    "timezone": "Europe/Oslo",
+    "desc": "ALOMAR observatory on Andøya, Norway"
+  },
+  "NYALESUND": {
+    "lat": 78.924444,
+    "lon": 11.928611,
+    "altitude": 10,
+    "timezone": "Europe/Oslo",
+    "desc": "Svalbard, Norway"
+  },
+  "OHP": {
+    "lat": 43.930833,
+    "lon": 5.713333,
+    "altitude": 650,
+    "timezone": "Europe/Paris",
+    "desc": "Observatoire de Haute-Provance, France"
+  },
+  "PAYERNE": {
+    "lat": 46.82056,
+    "lon": 6.937777,
+    "altitude": 456,
+    "timezone": "Europe/Zurich",
+    "desc": "Payerne, Switzerland"
+  },
+  "SODANKYLA": {
+    "lat": 67.416667,
+    "lon": 26.593056,
+    "timezone": "Europe/Helsinki",
+    "desc": "Sodankylä, Finnland"
+  }
+}

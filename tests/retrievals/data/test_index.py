@@ -29,15 +29,13 @@ def test_nc_index():
 
 def test_nc_index_update():
     pattern = 'ECMWF_OPER_v1_MAIDO_20180101.nc'
-    files = glob(os.path.join(TEST_DATA_PATH, pattern))
     ind = index.nc_index(TEST_DATA_PATH, pattern)
 
-    assert len(set(ind.values)) == len(files)
+    assert len(set(ind.values)) == 1
 
     pattern = 'ECMWF_OPER_v1_MAIDO_????????.nc'
-    files = glob(os.path.join(TEST_DATA_PATH, pattern))
     ind = index.nc_index(TEST_DATA_PATH, pattern, index=ind)
 
-    assert len(set(ind.values)) == len(files)
+    assert len(set(ind.values)) == 3
     assert ind['time'].min() == np.datetime64('2018-01-01 00:00:00')
     assert ind['time'].max() == np.datetime64('2018-01-03 18:00:00')
