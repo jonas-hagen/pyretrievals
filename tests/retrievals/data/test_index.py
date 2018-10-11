@@ -18,23 +18,26 @@ def test_interval_dict():
 
 
 def test_nc_index():
-    files = glob(os.path.join(TEST_DATA_PATH, 'ECMWF_OPER_v1_MAIDO_????????.nc'))
-    ind = index.nc_index(files)
+    pattern = 'ECMWF_OPER_v1_MAIDO_????????.nc'
+    files = glob(os.path.join(TEST_DATA_PATH, pattern))
+    ind = index.nc_index(TEST_DATA_PATH, pattern)
 
-    assert len(ind) == len(files)
-    assert ind.min() == np.datetime64('2018-01-01 00:00:00')
-    assert ind.max() == np.datetime64('2018-01-03 18:00:00')
+    assert len(set(ind.values)) == len(files)
+    assert ind['time'].min() == np.datetime64('2018-01-01 00:00:00')
+    assert ind['time'].max() == np.datetime64('2018-01-03 18:00:00')
 
 
 def test_nc_index_update():
-    files = glob(os.path.join(TEST_DATA_PATH, 'ECMWF_OPER_v1_MAIDO_20180101.nc'))
-    ind = index.nc_index(files)
+    pattern = 'ECMWF_OPER_v1_MAIDO_20180101.nc'
+    files = glob(os.path.join(TEST_DATA_PATH, pattern))
+    ind = index.nc_index(TEST_DATA_PATH, pattern)
 
-    assert len(ind) == len(files)
+    assert len(set(ind.values)) == len(files)
 
-    files = glob(os.path.join(TEST_DATA_PATH, 'ECMWF_OPER_v1_MAIDO_????????.nc'))
-    ind = index.nc_index(files, index=ind)
+    pattern = 'ECMWF_OPER_v1_MAIDO_????????.nc'
+    files = glob(os.path.join(TEST_DATA_PATH, pattern))
+    ind = index.nc_index(TEST_DATA_PATH, pattern, index=ind)
 
-    assert len(ind) == len(files)
-    assert ind.min() == np.datetime64('2018-01-01 00:00:00')
-    assert ind.max() == np.datetime64('2018-01-03 18:00:00')
+    assert len(set(ind.values)) == len(files)
+    assert ind['time'].min() == np.datetime64('2018-01-01 00:00:00')
+    assert ind['time'].max() == np.datetime64('2018-01-03 18:00:00')

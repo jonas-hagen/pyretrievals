@@ -1,4 +1,7 @@
 import xarray as xr
+from glob import glob
+import os
+import numpy as np
 
 
 class IntervalDict(dict):
@@ -23,29 +26,38 @@ class IntervalDict(dict):
         return max(b for _, b in self.keys())
 
 
-def nc_index(files, index_var='time', upper_index_var=None, index=None, **kwargs):
+def nc_index(path, pattern, index_var='time', index=None, **kwargs):
     """
-    Index NetCDF files.
+    Create an index of netCDF files.
 
-    :param files: List of file names.
-    :param index_var: Variable name to use for indexing. Default: `time`
-    :param upper_index_var: Variable name to use for the upper index if different from index_var.
+    :param path: Base path of the files.
+    :param pattern: Glob pattern for the files.
+    :param index_var: Variable to index. Default: 'time'
     :param index: Index to update. Files already present in the index are skipped.
-    :type index: IntervalDict
-    :param kwargs: Additional arguments to :py:func:`xarray.open_dataset`.
-    :rtype: IntervalDict
+    :type index: xarray.DataArray
+    :param kwargs: Additional arguments to :py:func:`xarray.open_dataset()`
+    :return: The new index.
+    :rtype: xarray.DataArray
     """
-    # TODO: Use netcdf-python for more speed?
-    upper_index_var = upper_index_var or index_var
-    if index is None:
-        index = IntervalDict()
-    new_files = filter(lambda fn: fn not in index.values(), files)
+    f_names = []
+    f_values = []
+    files = glob(os.path.join(path, pattern))
+    if index is not None:
+        f_names = list(index.values)
+        f_values = list(index[index_var].values)
+        known_files = set(os.path.join(path, fn) for fn in f_names)
+    else:
+        known_files = set()
+
+    new_files = list(filter(lambda fn: fn not in known_files, files))
     for f in new_files:
-        df = xr.open_dataset(f, **kwargs)
-        lower = df[index_var].min().values
-        upper = df[upper_index_var].max().values
-        index[(lower, upper)] = f
-        df.close()
+        ds = xr.open_mfdataset(f, **kwargs)
+        for value in ds[index_var].values:
+            f_names.append(os.path.relpath(f, path))
+            f_values.append(value)
+    index = xr.DataArray(data=f_names, coords={index_var: np.array(f_values)}, dims=(index_var,), name='file_names')
+    index.attrs['base_path'] = path
+    index.attrs['pattern'] = pattern
     return index
 
 
@@ -60,5 +72,20 @@ def main():
         print(a, b, f)
 
 
+def main2():
+    from retrievals.utils import Timer
+
+    path = '/media/network/gantrisch/scratch/wirac/ecmwf_locations'
+    pattern1 = 'ECMWF_OPER_v1_MAIDO_????????.nc'
+    pattern2 = 'ECMWF_OPER_v1_MAIDO_201801??.nc'
+    pattern3 = 'ECMWF_OPER_v1_MAIDO_201802??.nc'
+
+    with Timer():
+        index = nc_index(path, pattern2, index_var='time')
+    with Timer():
+        index = nc_index(path, pattern3, index_var='time', index=index)
+    print(index)
+
+
 if __name__ == '__main__':
-    main()
+    main2()
