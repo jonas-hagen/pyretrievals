@@ -2,8 +2,8 @@
 Extract ecmwf data for certain locations from global GRIB1 files.
 
 Usage:
-  extract_ecmwf.py extract <locations_file> <output_prefix> <grib_file>...
-  extract_ecmwf.py list_params <grib_file>
+  ecmwf_extract_locations.py extract <locations_file> <output_prefix> <grib_file>...
+  ecmwf_extract_locations.py list_params <grib_file>
 
 Options:
   -h --help     Show this screen.

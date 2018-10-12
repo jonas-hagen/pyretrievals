@@ -45,12 +45,13 @@ class ECMWFLocationFileStore:
         :return: A dataset that has been normalized by :py:meth:`normalize`
         :rtype: xarray.Dataset
         """
-        ts1 = pd.to_datetime(t1).round('D')
-        ts2 = pd.to_datetime(t2).round('D')
-        days = pd.date_range(ts1, ts2, freq='D')
+        ts1 = pd.to_datetime(t1)
+        ts2 = pd.to_datetime(t2)
+        days = pd.date_range(ts1, ts2, freq='D').round('D')
         files = sorted(self._files[d] for d in days)
 
         ds = xr.open_mfdataset(files, **kwargs)
+        ds = ds.sel(time=slice(t1, t2))
         return self.normalize(ds)
 
     @staticmethod

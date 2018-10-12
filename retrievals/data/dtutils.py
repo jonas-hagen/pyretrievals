@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import pandas as pd
 
 
 def date_glob(path, fmt):
@@ -25,3 +26,15 @@ def date_glob(path, fmt):
 
     return tree
 
+
+def year_start(ts):
+    """Return the first day of the year of the timestamp."""
+    ts = pd.to_datetime(ts)
+    return (ts - pd.Timedelta(ts.dayofyear-1, 'D')).floor('D')
+
+
+def fz_dayofyear(ts):
+    """Convert timestamp to fractional zero-based day-of-year."""
+    ts = pd.to_datetime(ts)
+    doy = (ts - year_start(ts)).total_seconds() / (24*60*60)
+    return doy

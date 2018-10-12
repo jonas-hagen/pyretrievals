@@ -25,6 +25,14 @@ ECMWF Specific
 .. autoclass:: ECMWFLocationFileStore
     :members:
 
-
-
 .. _ECMWF hybrid level definition: https://www.ecmwf.int/en/forecasts/documentation-and-support/137-model-levels
+
+
+WACCM Specific
+--------------
+
+.. py:module:: retrievals.data.waccm
+.. automodule:: retrievals.data.waccm
+
+.. autoclass:: WaccmLocationSingleFileStore
+    :members:
