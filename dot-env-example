@@ -1,5 +1,9 @@
 DATA_DIR=/iap/MW/users/hagen/projects/pyretrievals/data/
 
+# Earthdata
+NASA_EARTHDATA_LOGIN=username
+NASA_EARTHDATA_PASSWORD=password
+
 # This part was created by create_env.sh
 ARTS_HOME=/opt/arts-dev
 ARTS_INCLUDE_PATH=/opt/arts-dev/arts/controlfiles/

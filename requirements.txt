@@ -3,6 +3,9 @@ scipy
 pandas
 xarray
 pygrib
+pydap
+pastedeploy
+mechanicalsoup
 numba
 pytest
 python-dotenv

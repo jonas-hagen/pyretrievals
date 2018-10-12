@@ -36,3 +36,18 @@ WACCM Specific
 
 .. autoclass:: WaccmLocationSingleFileStore
     :members:
+
+
+NASA Earthdata
+--------------
+
+.. py:module:: retrievals.data.earthdata
+.. automodule:: retrievals.data.earthdata
+
+.. autofunction:: open_dataset
+
+.. autofunction:: download
+
+.. autofunction:: load_credentials
+
+.. autofunction:: setup_session
