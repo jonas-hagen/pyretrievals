@@ -3,6 +3,9 @@ Atmospheric data
 
 .. automodule:: retrievals.data
 
+.. contents::
+    :local:
+
 
 General utils
 -------------
@@ -10,6 +13,8 @@ General utils
 .. py:module:: retrievals.data
 
 .. autofunction:: date_glob
+
+.. autofunction:: nc_index
 
 
 ECMWF Specific

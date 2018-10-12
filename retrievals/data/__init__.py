@@ -7,3 +7,7 @@ from .dtutils import (
     year_start,
     fz_dayofyear,
 )
+
+from .index import (
+    nc_index,
+)
