@@ -47,11 +47,11 @@ class ECMWFLocationFileStore:
         """
         ts1 = pd.to_datetime(t1)
         ts2 = pd.to_datetime(t2)
-        days = pd.date_range(ts1, ts2, freq='D').round('D')
+        days = pd.date_range(ts1.floor('D'), ts2.floor('D'), freq='D')
         files = sorted(self._files[d] for d in days)
 
         ds = xr.open_mfdataset(files, **kwargs)
-        ds = ds.sel(time=slice(t1, t2))
+        ds = ds.sel(time=slice(ts1, ts2))
         return self.normalize(ds)
 
     @staticmethod

@@ -10,5 +10,5 @@ def test_store():
     assert len(es.file_names) == 3
 
     ds = es.select_time('2018-01-01 12', '2018-01-02 12')
-    assert len(ds['time']) == 4 * 3
+    assert len(ds['time']) == 5
     assert 'pressure' in ds
