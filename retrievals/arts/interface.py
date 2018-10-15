@@ -283,13 +283,18 @@ class ArtsController:
 
         if inversion_iterate_agenda is None:
             inversion_iterate_agenda = boilerplate.inversion_iterate_agenda
-
         ws.Copy(ws.inversion_iterate_agenda, inversion_iterate_agenda)
 
         if ws.dxdy.initialized:
             ws.Delete(ws.dxdy)  # This is a workaround to see if OEM converged
 
+        # a priori values
         ws.xaStandard()
+        xa = ws.xa.value
+        for rq in self.retrieval_quantities:
+            rq.extract_apriori(xa)
+
+        # Run inversion
         try:
             ws.OEM(method=method, max_iter=max_iter, stop_dx=stop_dx, lm_ga_settings=lm_ga_settings,
                    display_progress=1 if display_progress else 0)

@@ -92,6 +92,7 @@ class RetrievalQuantity:
         self._slice = None  # Holds the start and end indices for this quantity
         self._ws = None  # Associated workspace
 
+        self._xa = None
         self._x = None
         self._avkm = None
         self._eo = None
@@ -127,6 +128,16 @@ class RetrievalQuantity:
         ws = self.ws
         set_variable_by_xml(ws, ws.covmat_block, self.covmat)
         ws.covmat_sxAddBlock(block=ws.covmat_block)
+
+    def extract_apriori(self, xa=None):
+        """
+        Extract the a priori values. Call WSM `xaStandard()` before calling this function!
+        :param xa: The values in the `xa` vector just before the inversion. If None, copy from Workspace.
+        """
+        ws = self._ws
+        if xa is None:
+            xa = ws.xa.value
+        self._xa = xa[self._slice]
 
     def extract_result(self, x=None, avk=None, eo=None, es=None):
         """
@@ -165,6 +176,7 @@ class RetrievalQuantity:
         ds = xr.Dataset(
             data_vars={
                 prefix + 'x': (grid_names, np.reshape(self.x, shape)),
+                prefix + 'xa': (grid_names, np.reshape(self.xa, shape)),
                 prefix + 'mr': (grid_names, np.reshape(self.mr, shape)),
                 prefix + 'eo': (grid_names, np.reshape(self.eo, shape)),
                 prefix + 'es': (grid_names, np.reshape(self.es, shape)),
@@ -237,6 +249,11 @@ class RetrievalQuantity:
         return self._x
 
     @property
+    def xa(self):
+        """The a priori values. Available after :py:meth:`extract_apriori`."""
+        return self._xa
+
+    @property
     def avkm(self):
         """The averaging kernel matrix. Available after :py:meth:`extract_results`."""
         return self._avkm
@@ -291,6 +308,7 @@ class GriddedRetrievalQuantity(RetrievalQuantity):
         ds = xr.Dataset(
             data_vars={
                 prefix + 'x': (grid_names, np.reshape(self.x, shape)),
+                prefix + 'xa': (grid_names, np.reshape(self.xa, shape)),
                 prefix + 'mr': (grid_names, np.reshape(self.mr, shape)),
                 prefix + 'eo': (grid_names, np.reshape(self.eo, shape)),
                 prefix + 'es': (grid_names, np.reshape(self.es, shape)),
@@ -429,7 +447,7 @@ class FreqShift(RetrievalQuantity):
 
 class Polyfit(RetrievalQuantity):
     """Polynomial baseline fit."""
-    
+
     def __init__(self, poly_order, covmats, pol_variation=True, los_variation=True, mblock_variation=True):
         if len(covmats) != poly_order + 1:
             raise ValueError('Must provide (poly_order + 1) covariance matrices.')
@@ -466,6 +484,16 @@ class Polyfit(RetrievalQuantity):
         for covmat in self._covmats:
             self.ws.covmat_sxAddBlock(block=covmat)
 
+    def extract_apriori(self, xa=None):
+        """
+        Extract the a priori values. Call WSM `xaStandard()` before calling this function!
+        :param xa: The values in the `xa` vector just before the inversion. If None, copy from Workspace.
+        """
+        ws = self._ws
+        if xa is None:
+            xa = ws.xa.value
+        self._xa = [xa[s] for s in self._slice]  # Always 0, but we implement it anyways.
+
     def extract_result(self, x=None, avk=None, eo=None, es=None):
         """Extract the result and the corresponding values form the Workspace."""
         ws = self._ws
@@ -494,6 +522,7 @@ class Polyfit(RetrievalQuantity):
         ds = xr.Dataset(
             data_vars={
                 prefix + 'x': (grid_names, np.stack(self.x)),
+                prefix + 'xa': (grid_names, np.stack(self.xa)),
                 prefix + 'mr': (grid_names, np.stack(self.mr)),
                 prefix + 'eo': (grid_names, np.stack(self.eo)),
                 prefix + 'es': (grid_names, np.stack(self.es)),
