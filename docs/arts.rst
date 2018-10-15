@@ -49,7 +49,22 @@ Reference
 ---------
 
 .. autoclass:: ArtsController
-    :members:
+
+    .. automethod:: setup
+    .. automethod:: set_grids
+    .. automethod:: set_surface
+    .. automethod:: set_spectroscopy
+    .. automethod:: set_spectroscopy_from_file
+    .. automethod:: set_atmosphere
+    .. automethod:: set_wind
+    .. automethod:: set_sensor
+    .. automethod:: set_observations
+    .. automethod:: checked_calc
+    .. automethod:: y_calc
+    .. automethod:: set_y
+    .. automethod:: define_retrieval
+    .. automethod:: oem
+    .. automethod:: level2_xarray
 
 .. autoclass:: Observation
 

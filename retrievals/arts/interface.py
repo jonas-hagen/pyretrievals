@@ -50,6 +50,7 @@ class ArtsController:
     def setup(self, atmosphere_dim=1, iy_unit='RJBT', ppath_lmax=-1, stokes_dim=1):
         """
         Run boilerplate (includes, agendas) and set basic variables.
+
         :param atmosphere_dim:
         :param iy_unit:
         :param ppath_lmax:
@@ -160,12 +161,7 @@ class ArtsController:
         self.ws.vmr_field_raw = [atmosphere.vmr_field(mt) for mt in self.abs_species_maintags]
         self.ws.nlte_field_raw = None
 
-        if atmosphere.dimensions == 1:
-            self.ws.AtmFieldsCalcExpand1D()
-        else:
-            raise NotImplementedError(
-                'Inhomogeneous (multi-dimensional) raw atmospheres are not implemented (and not tested).')
-            # ws.AtmFieldsCalc()  Maybe?
+        self.ws.AtmFieldsCalcExpand1D()
 
     def set_wind(self, atmosphere=None, components=None):
         """
@@ -215,6 +211,12 @@ class ArtsController:
         self._observations = observations
 
     def set_y(self, ys):
+        """
+        Set the observations.
+
+        :param ys: List with a spectrum for every observation.
+        :return:
+        """
         y = np.concatenate(ys)
         self.ws.y = y
 
@@ -321,7 +323,7 @@ class ArtsController:
 
         return True
 
-    def level2_xarray(self):
+    def get_level2_xarray(self):
         ds = xr.merge([rq.to_xarray() for rq in self.retrieval_quantities])
 
         # Spectra

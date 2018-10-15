@@ -1,6 +1,7 @@
 from glob import glob
 import os
 import re
+from typing import Dict
 
 import numpy as np
 import xarray as xr
@@ -24,6 +25,8 @@ DEFAULT_TO_ARTS = {
     'lon': 'Longitude',
 }
 
+ARTS_TO_DEFAULT = {v: k for k, v in DEFAULT_TO_ARTS.items()}
+
 
 def z2p_simple(z):
     return 10 ** (5 - z / 16e3)
@@ -38,47 +41,29 @@ class Atmosphere:
     Represents the atmospheric state, including absorbing species, wind and temperature and altitude fields.
     """
 
-    def __init__(self, data):
-        self.data = self.check_and_normalize_data(data)
+    def __init__(self, data: Dict[str, xr.DataArray]= None):
+        if data is None:
+            self.data = {}
+        else:
+            self.data = {name: self.check_and_normalize_field(name, da) for name, da in data.items()}
+
+    def __getitem__(self, item):
+        """Return the raw data for a quantity."""
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        """Set the data for a quantity."""
+        self.data[key] = self.check_and_normalize_field(key, value)
 
     @classmethod
-    def check_and_normalize_data(cls, ds):
-        if not set(ds.dims) == {P_NAME, LAT_NAME, LON_NAME}:
+    def check_and_normalize_field(cls, name, da: xr.DataArray):
+        if not set(da.dims) == {P_NAME, LAT_NAME, LON_NAME}:
             # This is more restrictive than needed
-            raise ValueError('Dimensions of dataset must be p, lat, lon. Got: ' + ', '.join(ds.dims))
-        if T_NAME not in ds:
-            raise ValueError(f'Temperature field "{T_NAME}" is missing. Got: ' + ', '.join(ds.data_vars))
-        if Z_NAME not in ds:
-            raise ValueError(f'Altitude field "{T_NAME}" is missing. Got: ' + ', '.join(ds.data_vars))
-
-        ds = ds.transpose(P_NAME, LAT_NAME, LON_NAME)
-        return ds
-
-    @property
-    def lat(self):
-        """
-        The latitude grid.
-
-        :type: numpy.ndarray
-        """
-        return self.data[LAT_NAME].values
-
-    @property
-    def lon(self):
-        """
-        The longitude grid.
-
-        :type: numpy.ndarray
-        """
-        return self.data[LON_NAME].values
-
-    @property
-    def dimensions(self):
-        """Dimensionality is 1, if only one (lat, lon) coordinate present, 3 otherwise."""
-        if len(self.lat) == 1 and len(self.lon) == 1:
-            return 1
-        if len(self.lat) > 1 or len(self.lon) > 1:
-            return 3
+            raise ValueError('Dimensions of `{}` must be p, lat, lon. Got: {}'.format(name, ', '.join(da.dims)))
+        da = da.transpose(P_NAME, LAT_NAME, LON_NAME)
+        da.sortby(P_NAME, ascending=False)
+        da.name = name
+        return da
 
     @property
     def t_field(self):
@@ -124,18 +109,52 @@ class Atmosphere:
             raise KeyError('No data for absorption species ' + species)
         return self._gf_from_xarray(self.data[species].rename(DEFAULT_TO_ARTS))
 
+    def _set_field(self, name, p, x, lat=None, lon=None):
+        lat = np.array([0]) if lat is None else lat
+        lon = np.array([0]) if lon is None else lon
+        name = str.lower(name)
+
+        if p.ndim != 1:
+            raise ValueError('Pressure must be 1d.')
+        if len(lat) != 1 or len(lon) != 1:
+            raise NotImplementedError('Multi dimensional fields not supported.')
+        if x.shape != p.shape:
+            raise ValueError('`p` and `x` must have same shape.')
+
+        data = x[:, np.newaxis, np.newaxis]
+        da = xr.DataArray(data, coords=[p, lat, lon], dims=[P_NAME, LAT_NAME, LON_NAME], name=name)
+        self.data[name] = self.check_and_normalize_field(name, da)
+
+    def set_t_field(self, p, x, lat=None, lon=None):
+        """Set the Temperature field. Only 1d supported."""
+        self._set_field(T_NAME, p, x, lat, lon)
+
+    def set_z_field(self, p, x, lat=None, lon=None):
+        """Set the Altitude field. Only 1d supported."""
+        self._set_field(Z_NAME, p, x, lat, lon)
+
+    def set_wind_field(self, component, p, x, lat=None, lon=None):
+        """Set the wind field for a `component`. Only 1d supported."""
+        component_to_name = {'u': U_NAME, 'v': V_NAME, 'w': W_NAME}
+        self._set_field(component_to_name[component], p, x, lat, lon)
+
+    def set_vmr_field(self, species, p, x, lat=None, lon=None):
+        """Set the VMR field for a `species`. Only 1d supported."""
+        self._set_field(species, p, x, lat, lon)
+
     @classmethod
     def from_dataset(cls, ds):
         """
         Create atmosphere from a :py:class:`xarray.Dataset`.
 
-        :param ds: The dataset must have the variables `t`, `z`, `pressure`, `lat`, `lon` and can have
-                   absorbing species like `o3` (all lowercase).
+        :param ds: The dataset must have the coordinates `pressure`, `lat`, `lon` and can have
+                   variables `t`, `z` and absorbing species like `o3` (all lowercase).
         :type ds: xarray.Dataset
         :rtype: Atmosphere
         """
         ds = ds.copy()
-        return cls(ds)
+        data = {name: da for name, da in ds.data_vars.items()}
+        return cls(data)
 
     @classmethod
     def from_arts_xml(cls, prefix, ext='.xml'):
@@ -155,13 +174,13 @@ class Atmosphere:
         if not files:
             raise FileNotFoundError('No files found for matching ' + prefix + '*' + ext)
 
-        dss = []
-        for var_name, fn in files.items():
-            ds = xml.load(os.path.join(path, fn)).to_xarray()
-            ds.name = str.lower(var_name)
-            dss.append(ds)
-        ds = xr.merge(dss).rename({v: k for k, v in DEFAULT_TO_ARTS.items()})
-        return cls(ds)
+        def load(fn):
+            da = xml.load(os.path.join(path, fn)).to_xarray()
+            da = da.rename(ARTS_TO_DEFAULT)
+            return da
+
+        data = {str.lower(var_name): load(fn) for var_name, fn in files.items()}
+        return cls(data)
 
     @staticmethod
     def _gf_from_xarray(da):
