@@ -16,6 +16,10 @@ General utils
 
 .. autofunction:: nc_index
 
+.. autofunction:: interpolate
+
+.. autofunction:: p_interpolate
+
 
 ECMWF Specific
 --------------

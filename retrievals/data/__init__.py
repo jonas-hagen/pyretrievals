@@ -11,3 +11,8 @@ from .dtutils import (
 from .index import (
     nc_index,
 )
+
+from .utils import (
+    interpolate,
+    p_interpolate,
+)
