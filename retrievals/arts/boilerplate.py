@@ -22,8 +22,8 @@ def include_general(ws):
     :param ws: The Workspace
     """
     ws.execute_controlfile('general/general.arts')
-    ws.execute_controlfile('general/agendas.arts')
     ws.execute_controlfile('general/continua.arts')
+    ws.execute_controlfile('general/agendas.arts')
     ws.execute_controlfile('general/planet_earth.arts')
 
 
@@ -34,12 +34,12 @@ def copy_agendas(ws):
     :param ws: The Workspace
     """
     ws.Copy(ws.abs_xsec_agenda, ws.abs_xsec_agenda__noCIA)
-    ws.Copy(ws.ppath_agenda, ws.ppath_agenda__FollowSensorLosPath)
-    ws.Copy(ws.ppath_step_agenda, ws.ppath_step_agenda__GeometricPath)
+    ws.Copy(ws.propmat_clearsky_agenda, ws.propmat_clearsky_agenda__OnTheFly)
+    ws.Copy(ws.iy_main_agenda, ws.iy_main_agenda__Emission)
     ws.Copy(ws.iy_space_agenda, ws.iy_space_agenda__CosmicBackground)
     ws.Copy(ws.iy_surface_agenda, ws.iy_surface_agenda__UseSurfaceRtprop)
-    ws.Copy(ws.iy_main_agenda, ws.iy_main_agenda__Emission)
-    ws.Copy(ws.propmat_clearsky_agenda, ws.propmat_clearsky_agenda__OnTheFly)
+    ws.Copy(ws.ppath_agenda, ws.ppath_agenda__FollowSensorLosPath)
+    ws.Copy(ws.ppath_step_agenda, ws.ppath_step_agenda__GeometricPath)
 
 
 def set_basics(ws, atmosphere_dim=1, iy_unit='RJBT', ppath_lmax=-1, stokes_dim=1):
@@ -140,7 +140,7 @@ def inversion_iterate_agenda(ws):
     ws.atmgeom_checkedCalc()
 
     # Calculate yf and Jacobian matching x
-    ws.yCalc()
+    ws.yCalc(y=ws.yf)
 
     # Add baseline term
     ws.VectorAddVector(ws.yf, ws.y, ws.y_baseline)

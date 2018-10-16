@@ -136,7 +136,7 @@ def test_retrieval_quantity_xarray():
     assert ac.oem_converged
 
     rq1, rq2 = ac.retrieval_quantities
-    level2 = ac.level2_xarray()
+    level2 = ac.get_level2_xarray()
     assert 'y_baseline' in level2
     assert 'o3_offset' in level2
     assert 'observation' in level2

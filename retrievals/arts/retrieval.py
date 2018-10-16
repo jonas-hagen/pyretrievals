@@ -432,9 +432,14 @@ class Wind(GriddedRetrievalQuantity):
 class FreqShift(RetrievalQuantity):
     """Backend frequency shift."""
 
-    def __init__(self, sx, df=100e3):
-        covmat = np.array([sx])
+    def __init__(self, var, df=100e3):
+        covmat = np.array([var**2])
         super().__init__('FreqShift', covmat, df=df)
+
+    def apply_covmat(self):
+        ws = self.ws
+        ws.covmat_block = sparse.bsr_matrix(self.covmat)
+        ws.covmat_sxAddBlock(block=ws.covmat_block)
 
     @property
     def num_elem(self):

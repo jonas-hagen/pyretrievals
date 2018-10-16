@@ -68,7 +68,7 @@ class ArtsController:
         """Run checked calculations."""
         boilerplate.run_checks(self.ws, negative_vmr_ok)
 
-    def set_spectroscopy(self, abs_lines, abs_species, line_shape=None, f_abs_interp_order=3):
+    def set_spectroscopy(self, abs_lines, abs_species, line_shape=None, abs_f_interp_order=3):
         """
         Setup absorption species and spectroscopy data.
 
@@ -80,9 +80,9 @@ class ArtsController:
         :type abs_lines: typhon.arts.catalogues.ArrayOfLineRecord
         """
         boilerplate.setup_spectroscopy(self.ws, abs_lines, abs_species, line_shape)
-        self.ws.f_abs_interp_order = f_abs_interp_order  # no effect for OnTheFly propmat
+        self.ws.abs_f_interp_order = abs_f_interp_order  # no effect for OnTheFly propmat
 
-    def set_spectroscopy_from_file(self, abs_lines_file, abs_species, line_shape=None):
+    def set_spectroscopy_from_file(self, abs_lines_file, abs_species, line_shape=None, abs_f_interp_order=3):
         """
         Setup absorption species and spectroscopy data from XML file.
 
@@ -90,9 +90,10 @@ class ArtsController:
         :param abs_lines_file: Path to an XML file.
         :param abs_species: List of abs species tags.
         :param line_shape: Line shape definition. Default: ['Voigt_Kuntz6', 'VVH', 750e9]
+        :param f_abs_interp_order: No effect for OnTheFly propmat. Default: 3
         """
         abs_lines = xml.load(abs_lines_file)
-        self.set_spectroscopy(abs_lines, abs_species, line_shape)
+        self.set_spectroscopy(abs_lines, abs_species, line_shape, abs_f_interp_order)
 
     def set_grids(self, f_grid, p_grid, lat_grid=None, lon_grid=None):
         """
@@ -145,58 +146,51 @@ class ArtsController:
         """
         self.ws.z_surface = altitude * np.ones((self.n_lat, self.n_lat))
 
-    def set_atmosphere(self, atmosphere):
+    def set_atmosphere(self, atmosphere, vmr_zeropadding=False):
         """
         Set the atmospheric state.
 
         :param atmosphere: Atmosphere with Temperature, Altitude and VMR Fields.
         :type atmosphere: retrievals.arts.atmosphere.Atmosphere
+        :param vmr_zeropadding: Allow VMR zero padding. Default: False.
 
         .. note:: Currently only supports 1D atmospheres that is then expanded to a
             multi-dimensional homogeneous atmosphere.
+
+        .. warning:: Does not support wind fields for now.
         """
+        vmr_zeropadding = 1 if vmr_zeropadding else 0
 
         self.ws.t_field_raw = atmosphere.t_field
         self.ws.z_field_raw = atmosphere.z_field
         self.ws.vmr_field_raw = [atmosphere.vmr_field(mt) for mt in self.abs_species_maintags]
         self.ws.nlte_field_raw = None
 
-        self.ws.AtmFieldsCalcExpand1D()
+        self.ws.AtmFieldsCalcExpand1D(vmr_zeropadding=vmr_zeropadding)
 
-    def set_wind(self, atmosphere=None, components=None):
+    def set_wind(self, wind_u=None, wind_v=None, wind_w=None):
         """
-        Set the wind fields. If no atmosphere is supplied, all wind fields are set to zero.
-
-        :param atmosphere: Atmosphere with Wind fields. If None, set wind to zero.
-        :type atmosphere: retrievals.arts.atmosphere.Atmosphere
-        :param components: Tuple with elements 'u', 'v' and/or 'w'. Default: ('u', 'v')
-
-        .. note:: Currently only supports 1D atmospheres that is then expanded to a
-            multi-dimensional homogeneous atmosphere.
+        Set the wind fields to constant values.
         """
+        ws = self.ws
+        n_p, n_lat, n_lon = self.n_p, self.n_lat, self.n_lon
 
-        if atmosphere is None:
-            self.ws.u_field = []
-            self.ws.v_field = []
-            self.ws.w_field = []
-            return
+        if wind_u is not None:
+            ws.Tensor3SetConstant(ws.wind_u_field, n_p, n_lat, n_lon, float(wind_u))
+        if wind_v is not None:
+            ws.Tensor3SetConstant(ws.wind_v_field, n_p, n_lat, n_lon, float(wind_v))
+        if wind_w is not None:
+            ws.Tensor3SetConstant(ws.wind_w_field, n_p, n_lat, n_lon, float(wind_w))
 
-        if components is None:
-            components = ('u', 'v')
-
-        if 'u' in components:
-            self.ws.u_field_raw = atmosphere.wind_field('u')
-        if 'v' in components:
-            self.ws.v_field_raw = atmosphere.wind_field('v')
-        if 'w' in components:
-            self.ws.w_field_raw = atmosphere.wind_field('w')
-
-        if atmosphere.dimensions == 1:
-            self.ws.WindFieldsCalcExpand1D()
-        else:
-            raise NotImplementedError(
-                'Inhomogeneous (multi-dimensional) raw atmospheres are not implemented (and not tested).')
-            # ws.AtmFieldsCalc()  Maybe?
+    def _check_set_wind(self):
+        """Set uninitialized wind fields to 0."""
+        ws = self.ws
+        if ws.wind_u_field.value.size == 0:
+            self.set_wind(wind_u=0)
+        if ws.wind_v_field.value.size == 0:
+            self.set_wind(wind_v=0)
+        if ws.wind_w_field.value.size == 0:
+            self.set_wind(wind_w=0)
 
     def set_observations(self, observations):
         """
@@ -223,6 +217,7 @@ class ArtsController:
     def set_sensor(self, sensor):
         """
         Set the sensor.
+
         :param sensor:
         :type sensor: retrievals.arts.sensors.AbstractSensor
         """
@@ -232,6 +227,7 @@ class ArtsController:
     def y_calc(self, jacobian_do=False):
         """
         Run the forward model.
+
         :param jacobian_do: Not implemented yet.
         :return: The measurements as list with length according to observations.
         """
@@ -244,10 +240,14 @@ class ArtsController:
     def define_retrieval(self, retrieval_quantities, y_vars):
         """
         Define the retrieval quantities.
+
         :param retrieval_quantities: Iterable of retrieval quantities `retrievals.arts.retrieval.RetrievalQuantity`.
-        :param y_vars: Variance of the measurement noise.
+        :param y_vars: List or variance vectors according.
         """
         ws = self.ws
+
+        if isinstance(y_vars, (list, tuple)):
+            y_vars = np.concatenate(y_vars)
 
         if len(y_vars) != self.n_y:
             raise ValueError('Variance vector y_vars must have same length as y.')
@@ -263,12 +263,17 @@ class ArtsController:
         boilerplate.set_variable_by_xml(ws, ws.covmat_block, covmat_block)
         ws.covmat_seAddBlock(block=ws.covmat_block)
 
+        covmat_block = sparse.diags(1/y_vars, format='csr')
+        boilerplate.set_variable_by_xml(ws, ws.covmat_block, covmat_block)
+        ws.covmat_seAddInverseBlock(block=ws.covmat_block)
+
         ws.retrievalDefClose()
 
-    def oem(self, method='li', max_iter=10, stop_dx=0.001, lm_ga_settings=None, display_progress=True,
+    def oem(self, method='li', max_iter=10, stop_dx=0.01, lm_ga_settings=None, display_progress=True,
             inversion_iterate_agenda=None):
         """
         Run the optimal estimation. See Arts documentation for details.
+
         :param method:
         :param max_iter:
         :param stop_dx:
@@ -280,8 +285,13 @@ class ArtsController:
         ws = self.ws
 
         if lm_ga_settings is None:
-            lm_ga_settings = [10, 2, 2, 100, 1, 99]
+            lm_ga_settings = [100.0, 2.0, 2.0, 10.0, 1.0, 1.0]
         lm_ga_settings = np.array(lm_ga_settings)
+
+        # x, jacobian and yf must be initialised
+        ws.x = np.array([])
+        ws.yf = np.array([])
+        ws.jacobian = np.array([[]])
 
         if inversion_iterate_agenda is None:
             inversion_iterate_agenda = boilerplate.inversion_iterate_agenda
@@ -290,7 +300,10 @@ class ArtsController:
         if ws.dxdy.initialized:
             ws.Delete(ws.dxdy)  # This is a workaround to see if OEM converged
 
+        ws.AgendaExecute(ws.sensor_response_agenda)
+
         # a priori values
+        self._check_set_wind()
         ws.xaStandard()
         xa = ws.xa.value
         for rq in self.retrieval_quantities:
@@ -358,6 +371,10 @@ class ArtsController:
     @property
     def f_grid(self):
         return self.ws.f_grid.value
+
+    @property
+    def n_p(self):
+        return len(self.ws.p_grid.value)
 
     @property
     def n_lat(self):
