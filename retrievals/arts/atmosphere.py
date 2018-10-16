@@ -55,13 +55,16 @@ class Atmosphere:
         """Set the data for a quantity."""
         self.data[key] = self.check_and_normalize_field(key, value)
 
+    def __contains__(self, item):
+        return item in self.data
+
     @classmethod
     def check_and_normalize_field(cls, name, da: xr.DataArray):
         if not set(da.dims) == {P_NAME, LAT_NAME, LON_NAME}:
             # This is more restrictive than needed
             raise ValueError('Dimensions of `{}` must be p, lat, lon. Got: {}'.format(name, ', '.join(da.dims)))
         da = da.transpose(P_NAME, LAT_NAME, LON_NAME)
-        da.sortby(P_NAME, ascending=False)
+        da = da.sortby(P_NAME, ascending=False)
         da.name = name
         return da
 
@@ -107,7 +110,8 @@ class Atmosphere:
         species = str.lower(species)
         if species not in self.data:
             raise KeyError('No data for absorption species ' + species)
-        return self._gf_from_xarray(self.data[species].rename(DEFAULT_TO_ARTS))
+        da = self.data[species].rename(DEFAULT_TO_ARTS)
+        return self._gf_from_xarray(da)
 
     def _set_field(self, name, p, x, lat=None, lon=None):
         lat = np.array([0]) if lat is None else lat

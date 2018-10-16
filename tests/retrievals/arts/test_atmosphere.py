@@ -40,7 +40,6 @@ def test_from_xml_data():
     assert atm.z_field.gridnames == ['Pressure', 'Latitude', 'Longitude']
     assert atm.t_field.data.shape[1:] == (1, 1)
     assert atm.z_field.data.shape[1:] == (1, 1)
-    assert atm.dimensions == 1
 
 
 def test_no_files_found():
@@ -57,3 +56,11 @@ def test_fields():
     assert atm.t_field.data.shape[1:] == (1, 1)
     assert atm.z_field.data.shape[1:] == (1, 1)
     assert atm.vmr_field('O3').gridnames == ['Pressure', 'Latitude', 'Longitude']
+
+
+def test_setters():
+    atm = Atmosphere()
+    p_grid = np.logspace(1e5, 1 - 2, 100)
+    t_field = np.linspace(10, -50, 100)
+    atm.set_t_field(p_grid, t_field)
+    assert atm.t_field.data.shape == (len(p_grid), 1, 1)
