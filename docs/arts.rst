@@ -64,7 +64,7 @@ Reference
     .. automethod:: set_y
     .. automethod:: define_retrieval
     .. automethod:: oem
-    .. automethod:: level2_xarray
+    .. automethod:: get_level2_xarray
 
 .. autoclass:: Observation
 

@@ -173,11 +173,11 @@ def covmat_3d(grid1, cl1, fname1,
     :param cl1: The correlations lengths for the first dimension, same shape as grid1.
     :param fname1: Name of functional form of correlation, one of 'exp', 'lin', 'gauss'.
     :param grid2: Grid for second dimension.
-    :param cl2: ...
-    :param fname2: ...
+    :param cl2:
+    :param fname2:
     :param grid3: Grid for third dimension.
-    :param cl3: ...
-    :param fname3: ...
+    :param cl3:
+    :param fname3:
     :param sigma: Variances for the retrieval quantity on 3d grid.
     :param cutoff: Correlation cut-off
     :param use_separable: Use separable or non-separable statistics.

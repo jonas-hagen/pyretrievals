@@ -6,5 +6,7 @@ API Reference
     :caption: Contents:
 
     arts
+    covmat
+    utils
     level2
     data

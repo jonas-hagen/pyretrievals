@@ -1,4 +1,13 @@
 import time
+import numpy as np
+
+
+def var_allan(y, axis=0):
+    """
+    Compute Allan variance of `y` along `axis`.
+    """
+    var = np.mean(np.square(np.diff(y, axis=axis)), axis=axis) / 2
+    return var
 
 
 class Timer:
