@@ -58,9 +58,30 @@ class WaccmLocationSingleFileStore:
 
         return self.normalize(ds, ref_time)
 
+    def select_hours(self, t1, t2, hour1, hour2):
+        """
+        Select all data for certain hours within time interval `[t1, t2]` (inclusive).
+
+        :param t1: Start time
+        :type t1: Anything understood by :py:func:`pandas.to_datetime`
+        :param t2: End time
+        :type t2: Anything understood by :py:func:`pandas.to_datetime`
+        :param int hour1: First hour
+        :param int hour2: Last hour (might be smaller than `hour1` if range spans midnight)
+        :return: A dataset that has been normalized by :py:meth:`normalize`
+        :rtype: xarray.Dataset
+        """
+        ds = self.select_time(t1, t2)
+        rel_hours = (ds['time.hour'] - hour1) % 24
+        rel_hour2 = (hour2 - hour1) % 24
+
+        ds = ds.where(rel_hours <= rel_hour2, drop=True)
+        return ds
+
     @staticmethod
     def normalize(ds, ref_time=None):
         ds = ds.sortby('time')
+        ds = ds.sortby('lev')  # sigma pressure levels
 
         # Pressure field
         pressure = ds['hyam'] * ds['P0'] + ds['hybm'] * ds['PS']
