@@ -1,7 +1,7 @@
 __pycache__
-.env
-.idea
+/.env
+/.idea
 *.egg-info
-scratch
-docs/_build
-data/
+/scratch/
+/docs/_build
+/data/
