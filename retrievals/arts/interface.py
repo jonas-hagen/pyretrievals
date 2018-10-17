@@ -312,9 +312,6 @@ class ArtsController():
             inversion_iterate_agenda = boilerplate.inversion_iterate_agenda
         ws.Copy(ws.inversion_iterate_agenda, inversion_iterate_agenda)
 
-        if ws.dxdy.initialized:
-            ws.Delete(ws.dxdy)  # This is a workaround to see if OEM converged
-
         ws.AgendaExecute(ws.sensor_response_agenda)
 
         # a priori values
@@ -436,5 +433,9 @@ class ArtsController():
 
     @property
     def oem_converged(self):
-        return self.ws.dxdy.initialized and self.ws.dxdy.value is not None and self.ws.dxdy.value.shape != (0, 0)
+        return self.ws.oem_diagnostics.value[0] == 0
+
+    @property
+    def oem_errors(self):
+        return self.ws.oem_errors.value
 
