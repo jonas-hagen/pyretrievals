@@ -53,11 +53,11 @@ class OemException(Exception):
     pass
 
 
-class ArtsController:
-    """High level interface to ARTS."""
+class ArtsController():
+    """A not so high level interface to ARTS."""
 
-    def __init__(self):
-        self.ws = Workspace()
+    def __init__(self, verbosity=0, agenda_verbosity=0):
+        self.ws = Workspace(verbosity=verbosity, agenda_verbosity=agenda_verbosity)
         self.retrieval_quantities = []
         self._sensor = None
         self._observations = []
