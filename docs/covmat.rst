@@ -1,8 +1,6 @@
 Covariance matrices
 ===================
 
-.. py:module:: retrievals.covmat
-
 .. automodule:: retrievals.covmat
 
 

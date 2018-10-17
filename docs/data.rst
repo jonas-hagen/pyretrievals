@@ -10,8 +10,6 @@ Atmospheric data
 General utils
 -------------
 
-.. py:module:: retrievals.data
-
 .. autofunction:: date_glob
 
 .. autofunction:: nc_index
@@ -24,7 +22,6 @@ General utils
 ECMWF Specific
 --------------
 
-.. py:module:: retrievals.data.ecmwf
 .. automodule:: retrievals.data.ecmwf
 
 .. py:data:: hybrid_level
@@ -40,7 +37,6 @@ ECMWF Specific
 WACCM Specific
 --------------
 
-.. py:module:: retrievals.data.waccm
 .. automodule:: retrievals.data.waccm
 
 .. autoclass:: WaccmLocationSingleFileStore
@@ -50,7 +46,6 @@ WACCM Specific
 NASA Earthdata
 --------------
 
-.. py:module:: retrievals.data.earthdata
 .. automodule:: retrievals.data.earthdata
 
 .. autofunction:: open_dataset

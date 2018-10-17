@@ -1,8 +1,6 @@
 Level2 data processing
 ======================
 
-.. py:module:: retrievals.level2
-
 .. automodule:: retrievals.level2
 
 

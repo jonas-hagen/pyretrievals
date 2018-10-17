@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinxext.arts',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -199,9 +200,13 @@ intersphinx_mapping = {
     'typhon': ('http://www.radiativetransfer.org/misc/typhon/doc', None),
 }
 
-# -- Options for todo extension ----------------------------------------------
+# -- Options for arts extension
 
-# If true, `todo` and `todoList` produce output, else they produce nothing.
+arts_docserver_url = 'http://radiativetransfer.org/docserver-trunk'
+
+# -- Options for to do extension ----------------------------------------------
+
+# If true, `to do` and `to do List` produce output, else they produce nothing.
 todo_include_todos = True
 
 # -- Options for autodoc ----------------------------------------------

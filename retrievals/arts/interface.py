@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from scipy import sparse
-from collections import namedtuple
+from typing import NamedTuple
 
 from dotenv import load_dotenv
 
@@ -24,13 +24,28 @@ def _is_desc(x):
     return np.all(np.diff(x) < 0)
 
 
-Observation = namedtuple('Observation', ['time', 'za', 'aa', 'lat', 'lon', 'alt'])
-"""
-Geometry related to an observation.
-Fields `za` and `aa` are the azimuth and zenith angle of the line-of-sight.
-Fields `lat`, `lon`, `alt` describe the position of the sensor.
-Usually, `time` can be set to `0`.
-"""
+class Observation(NamedTuple):
+    """
+    Geometry related to an observation.
+    """
+
+    #: Zenith angle in [0, 180] (for 1D and 3D atmosphere). See :arts:variable:`sensor_los`.
+    za: float
+
+    #: Azimuth angle in [-180, 180] counted clockwise, 0 is north and 90 is east. See :arts:variable:`sensor_los`.
+    aa: float
+
+    #: Latitude of sensor, default 0. See :arts:variable:`sensor_pos`.
+    lat: float = 0
+
+    #: Longitude of sensor, default 0. See :arts:variable:`sensor_pos`.
+    lon: float = 0
+
+    #: Altitude of sensor, default 0. See :arts:variable:`sensor_pos`.
+    alt: float = 0
+
+    #: Time of sensor, default 0. See :arts:variable:`sensor_time`.
+    time: float = 0
 
 
 class OemException(Exception):

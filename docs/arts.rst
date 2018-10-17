@@ -1,8 +1,6 @@
 ARTS
 ====
 
-.. py:module:: retrievals.arts
-
 .. automodule:: retrievals.arts
 
 Summary
@@ -67,6 +65,13 @@ Reference
     .. automethod:: get_level2_xarray
 
 .. autoclass:: Observation
+
+    .. autoattribute:: za
+    .. autoattribute:: aa
+    .. autoattribute:: lat
+    .. autoattribute:: lon
+    .. autoattribute:: alt
+    .. autoattribute:: time
 
 .. autoclass:: OemException
     :members:
