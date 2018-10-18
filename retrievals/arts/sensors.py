@@ -40,14 +40,15 @@ class SensorOff(AbstractSensor):
     def __init__(self):
         pass
 
+    def apply(self, ws):
+        """Copy and execute sensor response agenda."""
+        ws.AntennaOff()
+        ws.sensorOff()
+        pass
+
     @property
     def sensor_response_agenda(self):
-        @arts_agenda
-        def sensor_response_agenda(ws):
-            ws.AntennaOff()
-            ws.SensorOff()
-
-        return sensor_response_agenda
+        return None
 
     @property
     def f_backend(self):
