@@ -107,8 +107,14 @@ class ArtsController():
         :param line_shape: Line shape definition. Default: ['Voigt_Kuntz6', 'VVH', 750e9]
         :param f_abs_interp_order: No effect for OnTheFly propmat. Default: 3
         """
-        abs_lines = xml.load(abs_lines_file)
-        self.set_spectroscopy(abs_lines, abs_species, line_shape, abs_f_interp_order)
+        ws = self.ws
+        if line_shape is None:
+            line_shape = ['Voigt_Kuntz6', 'VVH', 750e9]
+        ws.abs_speciesSet(abs_species)
+        ws.abs_lineshapeDefine(*line_shape)
+        ws.ReadXML(ws.abs_lines, abs_lines_file)
+        ws.abs_lines_per_speciesCreateFromLines()
+        ws.abs_f_interp_order = abs_f_interp_order
 
     def set_grids(self, f_grid, p_grid, lat_grid=None, lon_grid=None):
         """
@@ -119,6 +125,11 @@ class ArtsController():
         :param lat_grid:
         :param lon_grid:
         """
+        if lat_grid is None:
+            lat_grid = np.array([0])
+        if lon_grid is None:
+            lon_grid = np.array([0])
+
         if not self.ws.atmosphere_dim.initialized:
             raise Exception('atmosphere_dim must be initialized before assigning grids.')
         if not _is_asc(f_grid):
@@ -126,8 +137,8 @@ class ArtsController():
         if not _is_desc(p_grid) or not np.all(p_grid > 0):
             raise ValueError('Values of p_grid must be strictly decreasing and positive.')
         if self.ws.atmosphere_dim.value == 1:
-            if lat_grid is not None or lon_grid is not None:
-                raise ValueError('For 1D atmosphere, lat_grid and lon_grid shall be empty.')
+            if lat_grid.size > 1 or lon_grid.size > 1:
+                raise ValueError('For 1D atmosphere, lat_grid and lon_grid shall be of length 1.')
         elif self.ws.atmosphere_dim.value == 2:
             if lon_grid is not None or len(lat_grid):
                 raise ValueError('For 2D atmosphere, lon_grid shall be empty.')
@@ -147,8 +158,14 @@ class ArtsController():
 
         self.ws.f_grid = f_grid
         self.ws.p_grid = p_grid
-        self.ws.lat_grid = lat_grid
-        self.ws.lon_grid = lon_grid
+        if self.atmosphere_dim > 1:
+            self.ws.lat_grid = lat_grid
+            self.ws.lon_grid = lon_grid
+        else:
+            self.ws.lat_grid = []
+            self.ws.lon_grid = []
+            self.ws.lat_true = lat_grid
+            self.ws.lon_true = lon_grid
         self.set_surface(0)
 
     def set_surface(self, altitude: float):
@@ -159,7 +176,8 @@ class ArtsController():
 
         .. note:: Currently, only constant altitudes are supported.
         """
-        self.ws.z_surface = altitude * np.ones((self.n_lat, self.n_lat))
+        shape = max((1, 1), (self.n_lat, self.n_lat))
+        self.ws.z_surface = altitude * np.ones(shape)
 
     def set_atmosphere(self, atmosphere, vmr_zeropadding=False):
         """
@@ -181,7 +199,23 @@ class ArtsController():
         self.ws.vmr_field_raw = [atmosphere.vmr_field(mt) for mt in self.abs_species_maintags]
         self.ws.nlte_field_raw = None
 
-        self.ws.AtmFieldsCalcExpand1D(vmr_zeropadding=vmr_zeropadding)
+        if self.atmosphere_dim == 1:
+            self.ws.AtmFieldsCalc(vmr_zeropadding=vmr_zeropadding)
+        else:
+            self.ws.AtmFieldsCalcExpand1D(vmr_zeropadding=vmr_zeropadding)
+
+    def apply_hse(self, p_hse=100e2, z_hse_accuracy=0.5):
+        """
+        Calculate z field from hydrostatic equilibrium. See :arts:method:`z_fieldFromHSE`.
+
+        :param p_hse: See :arts:variable:`p_hse`.
+        :param z_hse_accuracy: See :arts:variable:`z_hse_accuracy`.
+        """
+        ws = self.ws
+        ws.p_hse = p_hse
+        ws.z_hse_accuracy = z_hse_accuracy
+        ws.atmfields_checkedCalc()
+        ws.z_fieldFromHSE()
 
     def set_wind(self, wind_u=None, wind_v=None, wind_w=None):
         """
@@ -214,9 +248,11 @@ class ArtsController():
         :param observations:
         :type observations: Iterable[retrievals.arts.interface.Observation]
         """
+        sensor_los = np.array([[obs.za, obs.aa] for obs in observations])
+        sensor_pos = np.array([[obs.alt, obs.lat, obs.lon] for obs in observations])
+        self.ws.sensor_los = sensor_los[:, :max(self.atmosphere_dim - 1, 1)]
+        self.ws.sensor_pos = sensor_pos[:, :self.atmosphere_dim]
         self.ws.sensor_time = np.array([obs.time for obs in observations])
-        self.ws.sensor_los = np.array([[obs.za, obs.aa] for obs in observations])
-        self.ws.sensor_pos = np.array([[obs.alt, obs.lat, obs.lon] for obs in observations])
         self._observations = observations
 
     def set_y(self, ys):
@@ -363,7 +399,7 @@ class ArtsController():
 
         # Observations
         for f in Observation._fields:
-            values = np.array([getattr(obs, f) for obs in self._observations])
+            values = np.array([getattr(obs, f) for obs in self._observations], dtype=np.float)
             ds['obs_'+f] = ('observation', values)
 
         return ds
@@ -390,10 +426,14 @@ class ArtsController():
 
     @property
     def n_lat(self):
+        if self.atmosphere_dim == 1:
+            return 1
         return len(self.ws.lat_grid.value)
 
     @property
     def n_lon(self):
+        if self.atmosphere_dim == 1:
+            return 1
         return len(self.ws.lat_grid.value)
 
     @property
@@ -430,6 +470,10 @@ class ArtsController():
         abs_species = self.ws.abs_species.value
         maintags = [st[0].split('-')[0] for st in abs_species]
         return maintags
+
+    @property
+    def atmosphere_dim(self):
+        return self.ws.atmosphere_dim.value
 
     @property
     def oem_converged(self):
