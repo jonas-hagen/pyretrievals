@@ -13,7 +13,9 @@ ARTS_ is the Atmospheric Radiative Transfer Simulator. Thanks to the Typhon_ pro
 atmospheric sciences and also a python interface to ARTS itself, via `typhon.arts.workspace`.
 Modules in this package build on these projects and create an interface for simple simulations and retrievals.
 
-Currently this is limited to ground based microwave measurements but might also be useful for other things, let me know!
+Currently this is limited to very specific applications in ground based microwave measurements, namely the WIRA-C
+instrument.
+But -- with none or minor adjustments -- it might also be useful for other things, let me know!
 
 .. _ARTS: http://radiativetransfer.org
 .. _Typhon: http://www.radiativetransfer.org/misc/typhon/doc/index.html

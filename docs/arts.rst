@@ -54,6 +54,7 @@ Reference
     .. automethod:: set_spectroscopy
     .. automethod:: set_spectroscopy_from_file
     .. automethod:: set_atmosphere
+    .. automethod:: apply_hse
     .. automethod:: set_wind
     .. automethod:: set_sensor
     .. automethod:: set_observations
