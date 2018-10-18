@@ -167,19 +167,19 @@ class RetrievalQuantity:
         """
         prefix = self.slug + '_'
         shape = self.shape
-        grid_names = [prefix + 'grid' + str(i+1) for i in range(len(self.shape))]
+        grid_names = [prefix + gn for gn in self.grid_names]
         grids = self.grids
-        flat_grid_name = prefix + 'grid'
+        flat_grid_name = prefix + 'grid' if self.dimensions > 1 else grid_names[0]
 
         coords = {n: c for n, c in zip(grid_names, grids)}
 
         ds = xr.Dataset(
             data_vars={
-                prefix + 'x': (grid_names, np.reshape(self.x, shape)),
-                prefix + 'xa': (grid_names, np.reshape(self.xa, shape)),
-                prefix + 'mr': (grid_names, np.reshape(self.mr, shape)),
-                prefix + 'eo': (grid_names, np.reshape(self.eo, shape)),
-                prefix + 'es': (grid_names, np.reshape(self.es, shape)),
+                prefix + 'x': (grid_names, np.reshape(self.x, shape, order='F')),
+                prefix + 'xa': (grid_names, np.reshape(self.xa, shape, order='F')),
+                prefix + 'mr': (grid_names, np.reshape(self.mr, shape, order='F')),
+                prefix + 'eo': (grid_names, np.reshape(self.eo, shape, order='F')),
+                prefix + 'es': (grid_names, np.reshape(self.es, shape, order='F')),
                 prefix + 'avkm': ((flat_grid_name, flat_grid_name + '_avk'), self.avkm),
             },
             coords=coords,
@@ -218,9 +218,18 @@ class RetrievalQuantity:
         return self._jacobian_quantity.grids
 
     @property
+    def grid_names(self):
+        """Names of the grids."""
+        return ['grid' + str(i + 1) for i in range(len(self.shape))]
+
+    @property
     def shape(self):
         """Shape of grids."""
         return tuple(map(len, self.grids))
+
+    @property
+    def dimensions(self):
+        return len(list(filter(lambda x: x > 1, self.shape)))
 
     @property
     def ws(self):
@@ -299,34 +308,15 @@ class GriddedRetrievalQuantity(RetrievalQuantity):
     def to_xarray(self):
         prefix = self.slug + '_'
         shape = self.shape
-        grid_names = [prefix + n for n in ('p', 'lat', 'lon')]
-        grids = self.grids
-        flat_grid_name = prefix+'p' if self.dimensions == 1 else prefix + 'grid'
+        grid_names = [prefix + gn for gn in self.grid_names]
 
-        coords = {n: c for n, c in zip(grid_names, grids)}
+        ds = super().to_xarray()
 
-        ds = xr.Dataset(
-            data_vars={
-                prefix + 'x': (grid_names, np.reshape(self.x, shape)),
-                prefix + 'xa': (grid_names, np.reshape(self.xa, shape)),
-                prefix + 'mr': (grid_names, np.reshape(self.mr, shape)),
-                prefix + 'eo': (grid_names, np.reshape(self.eo, shape)),
-                prefix + 'es': (grid_names, np.reshape(self.es, shape)),
-                prefix + 'fwhm': (grid_names, np.reshape(self.fwhm, shape)),
-                prefix + 'offset': (grid_names, np.reshape(self.offset, shape)),
-                prefix + 'avkm': ((flat_grid_name, flat_grid_name + '_avk'), self.avkm),
-                prefix + 'z': (grid_names[0], self.z_grid),
-            },
-            coords=coords,
-            attrs={
-                'maintag': self._jacobian_quantity.maintag,
-                'subtag': self._jacobian_quantity.subtag,
-                'subsubtag': self._jacobian_quantity.subsubtag,
-                'analytical': self._jacobian_quantity.analytical,
-                'mode': self._jacobian_quantity.mode,
-                'perturbation': self._jacobian_quantity.perturbation,
-            }
-        )
+        if self.dimensions == 1:
+            ds[prefix + 'z'] = (grid_names[0], self.z_grid)
+            ds[prefix + 'fwhm'] = (grid_names, np.reshape(self.fwhm, shape, order='F'))
+            ds[prefix + 'offset'] = (grid_names, np.reshape(self.offset, shape, order='F'))
+
         return ds
 
     @property
@@ -347,16 +337,30 @@ class GriddedRetrievalQuantity(RetrievalQuantity):
         if self.dimensions > 1:
             warnings.warn('Z grid extraction not supported for multi dim retrieval grids. Using simple conversion.')
             return p2z_simple(self.p_grid)
-        if self.lat_grid[0] not in self._ws.lat_grid.value or self.lon_grid[0] not in self._ws.lon_grid.value:
-            warnings.warn('Z grid extraction not supported for arbitrary retrieval grids. Using simple conversion.')
-            return p2z_simple(self.p_grid)
 
-        z_field = self._ws.z_field.value
+        atmosphere_dim = self._ws.atmosphere_dim.value
         lat_grid = self._ws.lat_grid.value
         lon_grid = self._ws.lon_grid.value
-        i_lat = np.searchsorted(lat_grid, self.lat_grid[0])
-        i_lon = np.searchsorted(lon_grid, self.lon_grid[0])
-        return z_field[:, i_lat, i_lon]
+        if atmosphere_dim > 1:
+            if self.lat_grid[0] not in lat_grid or self.lon_grid[0] not in lon_grid:
+                warnings.warn('Z grid extraction not supported for arbitrary retrieval grids. Using simple conversion.')
+                return p2z_simple(self.p_grid)
+
+        z_field = self._ws.z_field.value
+
+        if atmosphere_dim == 1:
+            i_lat = i_lon = 0
+        elif atmosphere_dim == 2:
+            i_lon = 0
+            i_lat = np.searchsorted(lat_grid, self.lat_grid[0])
+        else:
+            i_lat = np.searchsorted(lat_grid, self.lat_grid[0])
+            i_lon = np.searchsorted(lon_grid, self.lon_grid[0])
+        z_grid1 = z_field[:, i_lat, i_lon]
+        p_grid1 = self._ws.p_grid.value
+        idx = np.argsort(p_grid1)
+        z_grid = np.interp(np.log(self.p_grid), np.log(p_grid1[idx]), z_grid1[idx])
+        return z_grid
 
     @property
     def lat_grid(self):
@@ -367,8 +371,8 @@ class GriddedRetrievalQuantity(RetrievalQuantity):
         return self._args['g3']
 
     @property
-    def dimensions(self):
-        return len(list(filter(lambda x: x > 1, self.shape)))
+    def grid_names(self):
+        return 'p', 'lat', 'lon'
 
     @property
     def fwhm(self):
@@ -433,7 +437,7 @@ class FreqShift(RetrievalQuantity):
     """Backend frequency shift."""
 
     def __init__(self, var, df=100e3):
-        covmat = np.array([var**2])
+        covmat = np.array([var ** 2])
         super().__init__('FreqShift', covmat, df=df)
 
     def apply_covmat(self):
@@ -456,6 +460,9 @@ class Polyfit(RetrievalQuantity):
     def __init__(self, poly_order, covmats, pol_variation=True, los_variation=True, mblock_variation=True):
         if len(covmats) != poly_order + 1:
             raise ValueError('Must provide (poly_order + 1) covariance matrices.')
+        for covmat in covmats:
+            if covmat.ndim != 2:
+                raise ValueError('Covariance matrices must have ndim=2, but got {}.'.format(covmat.ndim))
 
         self._covmats = covmats
         super().__init__('Polyfit', None,
@@ -554,7 +561,7 @@ class Polyfit(RetrievalQuantity):
         jq_grids = self._jacobian_quantity[0].grids
         if len(jq_grids[0]) > 1 or len(jq_grids[1]) > 1 or len(jq_grids[2]) > 1:
             raise NotImplementedError()
-        return [np.arange(self.poly_order+1), np.array(jq_grids[-1], dtype=np.int)]
+        return [np.arange(self.poly_order + 1), np.array(jq_grids[-1], dtype=np.int)]
 
     @property
     def covmat(self):
