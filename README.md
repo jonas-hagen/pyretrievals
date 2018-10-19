@@ -38,7 +38,7 @@ of the project, where the ``.env`` file is located.
 
 ## Examples
 
-The ``examples`` directory contains a ``TestOEM.py`` file which is similar to the ARTS cfile
-``controlfiles/artscomponents/TestOEM.arts``. 
+The ``examples`` directory contains a ``test_oem.py`` file which is similar to the ARTS cfile
+``controlfiles/artscomponents/test_oem.arts``. 
 It simulates the ozone line at 110 GHz and retrieves ozone VMR, frequency shift and a polynomial baseline.
 

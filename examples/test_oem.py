@@ -25,7 +25,7 @@ def make_f_grid():
     return f_grid
 
 
-def main():
+def main(show_plots=False, save_plots=False, save_netcdf=False):
     f0 = 110.836e+9
 
     ac = arts.ArtsController()
@@ -94,7 +94,7 @@ def main():
     ac.oem(method='gn', max_iter=10, stop_dx=0.1)
 
     if not ac.oem_converged:
-        return
+        return False
 
     # Plots!
     yf = ac.yf[0]
@@ -110,8 +110,10 @@ def main():
     axs[0].set_ylabel('$T_B$ [K]')
     axs[1].set_ylabel('$T_B$ [K]')
     fig.tight_layout()
-    fig.savefig('TestOEM_spectrum.png')
-    #fig.show()
+    if save_plots:
+        fig.savefig('TestOEM_spectrum.png')
+    if show_plots:
+        fig.show()
 
     fig, axs = plt.subplots(2, 2, sharey=True)
 
@@ -133,18 +135,28 @@ def main():
         if 0.8 <= np.sum(avk) <= 1.2:
             axs[1][1].plot(avk, ozone_ret.z_grid / 1e3)
     fig.tight_layout()
-    fig.savefig('TestOEM_ozone.png')
-    #fig.show()
+    if save_plots:
+        fig.savefig('TestOEM_ozone.png')
+        print('\nSaved plots to TestOEM_*.png')
+    if show_plots:
+        fig.show()
 
     print('Fshift fit: {:g} kHz, true: {:g} kHz'.format(fshift_ret.x[0]/1e3, f_shift/1e3))
     print('Poly coefficients: ' + ', '.join(['{:.2f}'.format(x[0]) for x in polyfit_ret.x])
           + ' true: '+ ', '.join(map(str, bl_coeffs)))
 
-    ac.get_level2_xarray().to_netcdf('TestOEM_result.nc')
+    if save_netcdf:
+        ac.get_level2_xarray().to_netcdf('TestOEM_result.nc')
+        print('\nSaved results to TestOEM_result.nc')
+    
+    return True
 
-    print('\nSaved plots to TestOEM_*.png')
-    print('\nSaved results to TestOEM_result.nc')
+
+def test_oem():
+    """ Run this example as test """
+    assert main(show_plots=False, save_plots=False, save_netcdf=False)
 
 
 if __name__ == '__main__':
-    main()
+    main(show_plots=False, save_plots=True, save_netcdf=True)
+

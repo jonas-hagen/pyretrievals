@@ -2,12 +2,12 @@ Example
 =======
 
 
-Example 1, `TestOEM.py`
+Example 1, `test_oem.py`
 -----------------------
 
-.. autofunction:: examples.TestOEM.main
+.. autofunction:: examples.test_oem.main
 
-See the file ``examples/TestOEM.py`` which is very close to the ``controlfiles/artscomponents/TestOEM.arts`` cfile shipped with arts.
+See the file ``examples/test_oem.py`` which is very close to the ``controlfiles/artscomponents/test_oem.arts`` cfile shipped with arts.
 It simulates the ozone line at 110 GHz and retrieves ozone VMR, frequency shift and a polynomial baseline.
 
 
@@ -45,16 +45,16 @@ The output looks like this:
     Fshift fit: 148.675 kHz, true: -150 kHz
     Poly coefficients: 1.97, 1.00 true: 2, 1
 
-    Saved plots to TestOEM_*.png
+    Saved plots to test_oem_*.png
 
-    Saved results to TestOEM_result.nc
+    Saved results to test_oem_result.nc
 
 
 
-.. image:: _static/TestOEM_spectrum.*
+.. image:: _static/test_oem_spectrum.*
     :width: 60%
     :align: center
 
-.. image:: _static/TestOEM_ozone.*
+.. image:: _static/test_oem_ozone.*
     :width: 60%
     :align: center
