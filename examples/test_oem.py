@@ -111,7 +111,7 @@ def main(show_plots=False, save_plots=False, save_netcdf=False):
     axs[1].set_ylabel('$T_B$ [K]')
     fig.tight_layout()
     if save_plots:
-        fig.savefig('TestOEM_spectrum.png')
+        fig.savefig('test_oem_spectrum.png')
     if show_plots:
         fig.show()
 
@@ -136,7 +136,7 @@ def main(show_plots=False, save_plots=False, save_netcdf=False):
             axs[1][1].plot(avk, ozone_ret.z_grid / 1e3)
     fig.tight_layout()
     if save_plots:
-        fig.savefig('TestOEM_ozone.png')
+        fig.savefig('test_oem_ozone.png')
         print('\nSaved plots to TestOEM_*.png')
     if show_plots:
         fig.show()

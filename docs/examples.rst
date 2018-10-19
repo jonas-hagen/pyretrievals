@@ -1,9 +1,9 @@
-Example
-=======
+Examples
+========
 
 
 Example 1, `test_oem.py`
------------------------
+------------------------
 
 .. autofunction:: examples.test_oem.main
 

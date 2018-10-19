@@ -25,7 +25,8 @@ But -- with none or minor adjustments -- it might also be useful for other thing
     :maxdepth: 2
     :caption: Contents:
 
-    quickstart
+    overview
+    examples
     atmospheric_data
     scripts
     reference
