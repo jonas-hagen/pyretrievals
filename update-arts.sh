@@ -10,10 +10,6 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 cd $ARTS_SRC_PATH
 svn revert --recursive .
 svn update
-for i in $SCRIPTPATH/arts-patches/*.patch; do
-    patch -p0 < $i
-done
-
 
 cd $ARTS_DATA_PATH
 svn revert --recursive .

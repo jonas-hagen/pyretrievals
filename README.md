@@ -36,6 +36,21 @@ After that run ``source load_env.sh`` to export all the variables into your shel
 If you do not export the values, make sure to run all scripts and tests from the root directory
 of the project, where the ``.env`` file is located.
 
+## Compiling ARTS
+
+Compiling [ARTS](http://radiativetransfer.org) needs the following packages installed on a fresh
+Ubuntu system:
+
+* ``subversion``
+* ``build-essential``
+* ``cmake``
+* ``zlib1g``
+* ``zlib1g-dev``
+* ``libblas3``
+* ``libblas2-dev``
+* ``liblapack``
+* ``liblapack-dev``
+
 ## Examples
 
 The ``examples`` directory contains a ``test_oem.py`` file which is similar to the ARTS cfile
