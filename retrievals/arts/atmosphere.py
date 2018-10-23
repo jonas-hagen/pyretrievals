@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 
 from typhon.arts import xml
-from typhon.arts.griddedfield import GriddedField, GriddedField3
+from typhon.arts.griddedfield import GriddedField3
 
 # Default names of variables
 P_NAME = 'p'  # Pressure
@@ -188,6 +188,5 @@ class Atmosphere:
 
     @staticmethod
     def _gf_from_xarray(da):
-        gf = GriddedField.from_xarray(da)
-        gf.__class__ = GriddedField3
+        gf = GriddedField3.from_xarray(da)
         return gf
