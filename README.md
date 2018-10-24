@@ -31,29 +31,16 @@ pip install -r requirements.txt
 
 ## Environment setup
 
-Copy the ``dot-env-example`` file to ``.env`` and edit the values therein.
-After that run ``source load_env.sh`` to export all the variables into your shell.
-If you do not export the values, make sure to run all scripts and tests from the root directory
-of the project, where the ``.env`` file is located.
+The variables `$ARTS_BUILD_PATH` and `$ARTS_DATA_PATH` should be exported in your shell.
+Example:
 
-## Compiling ARTS
-
-Compiling [ARTS](http://radiativetransfer.org) needs the following packages installed on a fresh
-Ubuntu system:
-
-* ``subversion``
-* ``build-essential``
-* ``cmake``
-* ``zlib1g``
-* ``zlib1g-dev``
-* ``libblas3``
-* ``libblas2-dev``
-* ``liblapack``
-* ``liblapack-dev``
+```bash
+ARTS_DATA_PATH=/opt/arts-dev/arts-xml-data/
+ARTS_SRC_PATH=/opt/arts-dev/arts/
+```
 
 ## Examples
 
 The ``examples`` directory contains a ``test_oem.py`` file which is similar to the ARTS cfile
 ``controlfiles/artscomponents/test_oem.arts``. 
 It simulates the ozone line at 110 GHz and retrieves ozone VMR, frequency shift and a polynomial baseline.
-
