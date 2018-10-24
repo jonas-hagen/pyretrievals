@@ -29,6 +29,8 @@ To setup the full environment for testing and development, run:
 pip install -r requirements.txt
 ```
 
+Note: `pygrib` can be a hassle to install.
+
 ## Environment setup
 
 The variables `$ARTS_BUILD_PATH` and `$ARTS_DATA_PATH` should be exported in your shell.
