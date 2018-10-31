@@ -80,3 +80,6 @@ def test_retrieval():
     poi = slice(22, 45)
     assert np.allclose(x_true[poi], x_hat[poi], atol=0.1e-6)
     assert np.allclose(x_a[poi]-0.5e-6, x_hat[poi], atol=0.1e-6)
+def test_version():
+    ac = ArtsController()
+    assert ac.arts_version.startswith('arts-')

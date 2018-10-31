@@ -3,6 +3,7 @@ import xarray as xr
 from scipy import sparse
 from typing import NamedTuple
 
+import os
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path='./.env')
@@ -482,4 +483,10 @@ class ArtsController():
     @property
     def oem_errors(self):
         return self.ws.oem_errors.value
+
+    @property
+    def arts_version(self):
+        cmd = os.path.join(os.environ['ARTS_BUILD_PATH'], 'src/arts')
+        output = os.popen(cmd + ' --version').read().splitlines()
+        return output[0]
 
