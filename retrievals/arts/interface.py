@@ -455,6 +455,8 @@ class ArtsController():
     def y_baseline(self):
         if self.ws.y_baseline.initialized:
             bl = np.copy(self.ws.y_baseline.value)
+            if bl.size == 1 and bl[0] == 0:
+                return None
             return np.split(bl, self.n_obs)
         else:
             return None
