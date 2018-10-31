@@ -82,6 +82,13 @@ def test_retrieval():
     assert np.allclose(x_a[poi]-0.5e-6, x_hat[poi], atol=0.1e-6)
 
     assert len(ac.oem_diagnostics) == 5
+
+    # Check to_netcdf
+    ds = ac.get_level2_xarray()
+    assert 'uuid' in ds.attrs
+    assert 'arts_version' in ds.attrs
+
+
 def test_version():
     ac = ArtsController()
     assert ac.arts_version.startswith('arts-')

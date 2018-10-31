@@ -2,8 +2,9 @@ import numpy as np
 import xarray as xr
 from scipy import sparse
 from typing import NamedTuple
-
 import os
+import uuid
+import datetime
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path='./.env')
@@ -393,6 +394,7 @@ class ArtsController():
         ds['f'] = ('f', f_backend)
         ds['y'] = (('observation', 'f'), np.stack(self.y))
         ds['yf'] = (('observation', 'f'), np.stack(self.yf))
+        ds['oem_diagnostics'] = ('oem_diagnostics_idx', self.oem_diagnostics)
 
         y_baseline = self.y_baseline
         if y_baseline is not None:
@@ -402,6 +404,12 @@ class ArtsController():
         for f in Observation._fields:
             values = np.array([getattr(obs, f) for obs in self._observations], dtype=np.float)
             ds['obs_'+f] = ('observation', values)
+
+        # Global attributes
+        ds.attrs['arts_version'] = self.arts_version
+        ds.attrs['uuid'] = str(uuid.uuid4())
+        ds.attrs['date_created'] = datetime.datetime.utcnow().isoformat()
+        ds.attrs['nodename'] = os.uname().nodename
 
         return ds
 
