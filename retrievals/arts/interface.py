@@ -481,6 +481,10 @@ class ArtsController():
         return self.ws.oem_diagnostics.value[0] == 0
 
     @property
+    def oem_diagnostics(self):
+        return self.ws.oem_diagnostics.value
+
+    @property
     def oem_errors(self):
         return self.ws.oem_errors.value
 
