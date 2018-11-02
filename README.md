@@ -2,7 +2,7 @@
 
 Building on the great projects [ARTS](http://radiativetransfer.org) and 
 [Typhon](http://www.radiativetransfer.org/misc/typhon/doc/index.html), this library
-provides some tools I use to run simulations and retrievals for the WIRA-C interface.
+provides some tools I use to run simulations and retrievals for the WIRA-C instrument.
 
 Currently this projects is probably only usefult for very specific applications in ground based microwave measurements, namely the WIRA-C
 instrument and similar.
