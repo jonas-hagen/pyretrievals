@@ -8,6 +8,8 @@ Currently this projects is probably only usefult for very specific applications 
 instrument and similar.
 But, possibly with minor adjustments, it might also be useful for other things!
 
+See also the [**Documentation**](http://www.iapmw.unibe.ch/research/projects/pyretrievals/index.html).
+
 ## Install
 
 This package requires Python 3.6 and a recent version of [ARTS](http://radiativetransfer.org).
