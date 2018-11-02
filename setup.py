@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(name='retrievals',
       version='0.1',
@@ -8,7 +7,7 @@ setup(name='retrievals',
       author='Jonas Hagen',
       author_email='jonas.hagen@iap.unibe.ch',
       url='',
-      packages=['retrievals', ],
+      packages=find_packages(include='retrievals*'),
       install_requires=[
           'numpy',
           'numba',
