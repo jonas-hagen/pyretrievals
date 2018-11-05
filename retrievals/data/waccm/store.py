@@ -45,6 +45,13 @@ class WaccmLocationSingleFileStore:
         doy1 = dtutils.fz_dayofyear(ts1)
         doy2 = dtutils.fz_dayofyear(ts2)
 
+        if ts1.is_leap_year:
+            if doy1 >= 60:
+                doy1 -= 1
+        if ts2.is_leap_year:
+            if doy2 >= 61:
+                doy2 -= 1
+
         if doy1 < doy2:
             ds = self.ds.sel(time=slice(doy1, doy2))
             ref_time = dtutils.year_start(ts1)
