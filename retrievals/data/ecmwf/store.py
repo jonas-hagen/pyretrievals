@@ -48,7 +48,10 @@ class ECMWFLocationFileStore:
         ts1 = pd.to_datetime(t1)
         ts2 = pd.to_datetime(t2)
         days = pd.date_range(ts1.floor('D'), ts2.floor('D'), freq='D')
-        files = sorted(self._files[d] for d in days)
+        try:
+            files = sorted(self._files[d] for d in days)
+        except KeyError as e:
+            raise KeyError('No ECMWF data found for {}'.format(e.args[0])) from e
 
         ds = xr.open_mfdataset(files, **kwargs)
         ds = ds.sel(time=slice(ts1, ts2))
