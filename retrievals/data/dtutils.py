@@ -30,11 +30,19 @@ def date_glob(path, fmt):
 def year_start(ts):
     """Return the first day of the year of the timestamp."""
     ts = pd.to_datetime(ts)
-    return (ts - pd.Timedelta(ts.dayofyear-1, 'D')).floor('D')
+    return (ts - pd.Timedelta(ts.dayofyear - 1, "D")).floor("D")
 
 
-def fz_dayofyear(ts):
-    """Convert timestamp to fractional zero-based day-of-year."""
+def fz_dayofyear(ts, squash_leap=False):
+    """
+    Convert timestamp to fractional zero-based day-of-year.
+
+    :param squash_leap: If true, Feb. 29 and Feb. 28 are the same day-of-year.
+    """
     ts = pd.to_datetime(ts)
-    doy = (ts - year_start(ts)).total_seconds() / (24*60*60)
+    doy = (ts - year_start(ts)).total_seconds() / (24 * 60 * 60)
+
+    if ts.is_leap_year and squash_leap and doy >= 60:
+        doy -= 1
+
     return doy
