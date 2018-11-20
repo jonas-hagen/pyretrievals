@@ -31,7 +31,7 @@ class ECMWFLocationFileStore:
         """
         self._path = path
         self._fmt = fmt
-        self._files = dtutils.date_glob(path, fmt)
+        self._files = dict(dtutils.date_glob(path, fmt))
 
     def select_time(self, t1, t2, **kwargs):
         """
