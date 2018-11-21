@@ -15,6 +15,7 @@ from typhon.arts.griddedfield import GriddedField3
 
 from retrievals.arts import boilerplate
 from retrievals.arts import retrieval
+from retrievals.data import p_interpolate
 
 
 def _is_asc(x):
@@ -188,7 +189,8 @@ class ArtsController():
 
         :param atmosphere: Atmosphere with Temperature, Altitude and VMR Fields.
         :type atmosphere: retrievals.arts.atmosphere.Atmosphere
-        :param vmr_zeropadding: Allow VMR zero padding. Default: False.
+        :param vmr_zeropadding: Allow VMR zero padding wind fields are always zero
+                                padded. Default: False.
 
         .. note:: Currently only supports 1D atmospheres that is then expanded to a
             multi-dimensional homogeneous atmosphere.
@@ -201,24 +203,23 @@ class ArtsController():
         self.ws.nlte_field_raw = None
 
         for c in ('u', 'v', 'w'):
-            field_name = 'wind_{}_field_raw'.format(c)
             try:
-                field = atmosphere.wind_field(c)
-            except KeyError:
-                # set to zero
-                field = GriddedField3(
-                    grids=[self.p_grid, np.array([0]), np.array([0])],
-                    data=np.zeros((self.n_p, 1, 1)),
-                    gridnames=['Pressure', 'Latitude', 'Longitude'],
+                raw_field = atmosphere.wind_field(c)
+                field = p_interpolate(
+                    self.p_grid, raw_field.grids[0], raw_field.data[:, 0, 0], fill=0
                 )
+            except KeyError:
+                field = np.zeros_like(self.p_grid)
+            field = np.tile(
+                field[:, np.newaxis, np.newaxis], (1, self.n_lat, self.n_lon)
+            )
+            field_name = 'wind_{}_field'.format(c)
             setattr(self.ws, field_name, field)
 
         if self.atmosphere_dim == 1:
             self.ws.AtmFieldsCalc(vmr_zeropadding=vmr_zeropadding)
-            self.ws.WindFieldsCalc()
         else:
             self.ws.AtmFieldsCalcExpand1D(vmr_zeropadding=vmr_zeropadding)
-            self.ws.WindFieldsCalcExpand1D()
 
     def apply_hse(self, p_hse=100e2, z_hse_accuracy=0.5):
         """
