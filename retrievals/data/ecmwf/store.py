@@ -53,8 +53,9 @@ class ECMWFLocationFileStore:
         except KeyError as e:
             raise KeyError('No ECMWF data found for {}'.format(e.args[0])) from e
 
-        ds = xr.open_mfdataset(files, **kwargs)
-        ds = ds.sel(time=slice(ts1, ts2))
+        ds_mf = xr.open_mfdataset(files, **kwargs)
+        ds = ds_mf.sel(time=slice(ts1, ts2)).compute().copy(deep=True)
+        ds_mf.close()
         return self.normalize(ds)
 
     def select_hours(self, t1, t2, hour1, hour2):
