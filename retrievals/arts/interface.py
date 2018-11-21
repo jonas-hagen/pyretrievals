@@ -11,6 +11,7 @@ load_dotenv(dotenv_path='./.env')
 
 from typhon.arts.workspace import Workspace, arts_agenda
 from typhon.arts import xml
+from typhon.arts.griddedfield import GriddedField3
 
 from retrievals.arts import boilerplate
 from retrievals.arts import retrieval
@@ -191,8 +192,6 @@ class ArtsController():
 
         .. note:: Currently only supports 1D atmospheres that is then expanded to a
             multi-dimensional homogeneous atmosphere.
-
-        .. warning:: Does not support wind fields for now.
         """
         vmr_zeropadding = 1 if vmr_zeropadding else 0
 
@@ -201,10 +200,25 @@ class ArtsController():
         self.ws.vmr_field_raw = [atmosphere.vmr_field(mt) for mt in self.abs_species_maintags]
         self.ws.nlte_field_raw = None
 
+        for c in ('u', 'v', 'w'):
+            field_name = 'wind_{}_field_raw'.format(c)
+            try:
+                field = atmosphere.wind_field(c)
+            except KeyError:
+                # set to zero
+                field = GriddedField3(
+                    grids=[self.p_grid, np.array([0]), np.array([0])],
+                    data=np.zeros((self.n_p, 1, 1)),
+                    gridnames=['Pressure', 'Latitude', 'Longitude'],
+                )
+            setattr(self.ws, field_name, field)
+
         if self.atmosphere_dim == 1:
             self.ws.AtmFieldsCalc(vmr_zeropadding=vmr_zeropadding)
+            self.ws.WindFieldsCalc()
         else:
             self.ws.AtmFieldsCalcExpand1D(vmr_zeropadding=vmr_zeropadding)
+            self.ws.WindFieldsCalcExpand1D()
 
     def apply_hse(self, p_hse=100e2, z_hse_accuracy=0.5):
         """
