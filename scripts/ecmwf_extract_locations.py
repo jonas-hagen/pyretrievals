@@ -10,6 +10,7 @@ Options:
   --version     Show version.
 """
 from retrievals.data.ecmwf import grib as ecmwf_grib
+from retrievals.data.ecmwf import levels as ecmwf_levels
 from glob import glob
 import xarray as xr
 from docopt import docopt
@@ -131,7 +132,7 @@ def extract(grib_files, locations, output_prefix):
                                        a[np.newaxis, :, :],
                                        {'grib_name': p})
             # calculate pressure
-            pressure = ecmwf_grib.pressure_levels(xs['Logarithm of surface pressure'])
+            pressure = ecmwf_levels.pressure_levels(xs['Logarithm of surface pressure'])
             data_vars['pressure'] = (('loc', 'level', 'time'),
                                      pressure,
                                      ATTRS['pressure'])
