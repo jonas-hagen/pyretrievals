@@ -83,9 +83,9 @@ class ArtsController():
         self.ws.jacobianOff()
         self.ws.cloudboxOff()
 
-    def checked_calc(self, negative_vmr_ok=False):
+    def checked_calc(self, negative_vmr_ok=False, bad_partition_functions_ok=False):
         """Run checked calculations."""
-        boilerplate.run_checks(self.ws, negative_vmr_ok)
+        boilerplate.run_checks(self.ws, negative_vmr_ok, bad_partition_functions_ok)
 
     def set_spectroscopy(self, abs_lines, abs_species, line_shape=None, abs_f_interp_order=3):
         """

@@ -91,7 +91,7 @@ def setup_spectroscopy(ws, abs_lines, abs_species, line_shape=None):
     ws.abs_lines_per_speciesCreateFromLines()
 
 
-def run_checks(ws, negative_vmr_ok=False):
+def run_checks(ws, negative_vmr_ok=False, bad_partition_functions_ok=False):
     """
     Run common checkedCalc methods.
     :param ws: The Workspace
@@ -100,7 +100,9 @@ def run_checks(ws, negative_vmr_ok=False):
 
     ws.abs_xsec_agenda_checkedCalc()
     ws.propmat_clearsky_agenda_checkedCalc()
-    ws.atmfields_checkedCalc(negative_vmr_ok=negative_vmr_ok)
+    ws.atmfields_checkedCalc(
+        negative_vmr_ok=1 if negative_vmr_ok else 0,
+        bad_partition_functions_ok=1 if bad_partition_functions_ok else 0)
     ws.atmgeom_checkedCalc()
     ws.cloudbox_checkedCalc()
     ws.sensor_checkedCalc()
