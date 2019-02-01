@@ -37,8 +37,8 @@ def main(show_plots=False, save_plots=False, save_netcdf=False):
     ac.set_grids(f_grid, p_grid)
 
     # Spectroscopy
-    ac.set_spectroscopy_from_file('testdata/ozone_line.xml',
-                                  ['O3'], ('Voigt_Kuntz6', 'VVH', 750e9))
+    ac.set_spectroscopy_from_file('testdata/ozone_line.xml', ['O3'],
+                                  'Arts', ('Voigt_Kuntz6', 'VVH', 750e9))
 
     # Atmosphere (a priori)
     clim_prefix = os.path.join(ARTS_DATA_PATH, 'planets/Earth/Fascod/tropical/tropical.')

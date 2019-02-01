@@ -101,13 +101,14 @@ class ArtsController():
         boilerplate.setup_spectroscopy(self.ws, abs_lines, abs_species, line_shape)
         self.ws.abs_f_interp_order = abs_f_interp_order  # no effect for OnTheFly propmat
 
-    def set_spectroscopy_from_file(self, abs_lines_file, abs_species, line_shape=None, abs_f_interp_order=3):
+    def set_spectroscopy_from_file(self, abs_lines_file, abs_species, format='Arts', line_shape=None, abs_f_interp_order=3):
         """
         Setup absorption species and spectroscopy data from XML file.
 
         :param ws: The workspace.
         :param abs_lines_file: Path to an XML file.
         :param abs_species: List of abs species tags.
+        :param format: One of 'Arts', 'Jpl', 'Hitran' (and others for which a WSM `abs_linesReadFrom...` exists)
         :param line_shape: Line shape definition. Default: ['Voigt_Kuntz6', 'VVH', 750e9]
         :param f_abs_interp_order: No effect for OnTheFly propmat. Default: 3
         """
@@ -116,7 +117,9 @@ class ArtsController():
             line_shape = ['Voigt_Kuntz6', 'VVH', 750e9]
         ws.abs_speciesSet(abs_species)
         ws.abs_lineshapeDefine(*line_shape)
-        ws.ReadXML(ws.abs_lines, abs_lines_file)
+        #ws.ReadXML(ws.abs_lines, abs_lines_file)
+        read_fn = getattr(ws, 'abs_linesReadFrom' + format)
+        read_fn(filename=abs_lines_file, fmin=float(0), fmax=float(10e12))
         ws.abs_lines_per_speciesCreateFromLines()
         ws.abs_f_interp_order = abs_f_interp_order
 
