@@ -11,9 +11,11 @@ load_dotenv(dotenv_path='./.env')
 
 from typhon.arts.workspace import Workspace, arts_agenda
 from typhon.arts import xml
+from typhon.arts.griddedfield import GriddedField3
 
 from retrievals.arts import boilerplate
 from retrievals.arts import retrieval
+from retrievals.data import p_interpolate
 
 
 def _is_asc(x):
@@ -81,9 +83,9 @@ class ArtsController():
         self.ws.jacobianOff()
         self.ws.cloudboxOff()
 
-    def checked_calc(self, negative_vmr_ok=False):
+    def checked_calc(self, negative_vmr_ok=False, bad_partition_functions_ok=False):
         """Run checked calculations."""
-        boilerplate.run_checks(self.ws, negative_vmr_ok)
+        boilerplate.run_checks(self.ws, negative_vmr_ok, bad_partition_functions_ok)
 
     def set_spectroscopy(self, abs_lines, abs_species, line_shape=None, abs_f_interp_order=3):
         """
@@ -99,13 +101,14 @@ class ArtsController():
         boilerplate.setup_spectroscopy(self.ws, abs_lines, abs_species, line_shape)
         self.ws.abs_f_interp_order = abs_f_interp_order  # no effect for OnTheFly propmat
 
-    def set_spectroscopy_from_file(self, abs_lines_file, abs_species, line_shape=None, abs_f_interp_order=3):
+    def set_spectroscopy_from_file(self, abs_lines_file, abs_species, format='Arts', line_shape=None, abs_f_interp_order=3):
         """
         Setup absorption species and spectroscopy data from XML file.
 
         :param ws: The workspace.
         :param abs_lines_file: Path to an XML file.
         :param abs_species: List of abs species tags.
+        :param format: One of 'Arts', 'Jpl', 'Hitran' (and others for which a WSM `abs_linesReadFrom...` exists)
         :param line_shape: Line shape definition. Default: ['Voigt_Kuntz6', 'VVH', 750e9]
         :param f_abs_interp_order: No effect for OnTheFly propmat. Default: 3
         """
@@ -114,7 +117,9 @@ class ArtsController():
             line_shape = ['Voigt_Kuntz6', 'VVH', 750e9]
         ws.abs_speciesSet(abs_species)
         ws.abs_lineshapeDefine(*line_shape)
-        ws.ReadXML(ws.abs_lines, abs_lines_file)
+        #ws.ReadXML(ws.abs_lines, abs_lines_file)
+        read_fn = getattr(ws, 'abs_linesReadFrom' + format)
+        read_fn(filename=abs_lines_file, fmin=float(0), fmax=float(10e12))
         ws.abs_lines_per_speciesCreateFromLines()
         ws.abs_f_interp_order = abs_f_interp_order
 
@@ -187,12 +192,11 @@ class ArtsController():
 
         :param atmosphere: Atmosphere with Temperature, Altitude and VMR Fields.
         :type atmosphere: retrievals.arts.atmosphere.Atmosphere
-        :param vmr_zeropadding: Allow VMR zero padding. Default: False.
+        :param vmr_zeropadding: Allow VMR zero padding wind fields are always zero
+                                padded. Default: False.
 
         .. note:: Currently only supports 1D atmospheres that is then expanded to a
             multi-dimensional homogeneous atmosphere.
-
-        .. warning:: Does not support wind fields for now.
         """
         vmr_zeropadding = 1 if vmr_zeropadding else 0
 
@@ -200,6 +204,20 @@ class ArtsController():
         self.ws.z_field_raw = atmosphere.z_field
         self.ws.vmr_field_raw = [atmosphere.vmr_field(mt) for mt in self.abs_species_maintags]
         self.ws.nlte_field_raw = None
+
+        for c in ('u', 'v', 'w'):
+            try:
+                raw_field = atmosphere.wind_field(c)
+                field = p_interpolate(
+                    self.p_grid, raw_field.grids[0], raw_field.data[:, 0, 0], fill=0
+                )
+            except KeyError:
+                field = np.zeros_like(self.p_grid)
+            field = np.tile(
+                field[:, np.newaxis, np.newaxis], (1, self.n_lat, self.n_lon)
+            )
+            field_name = 'wind_{}_field'.format(c)
+            setattr(self.ws, field_name, field)
 
         if self.atmosphere_dim == 1:
             self.ws.AtmFieldsCalc(vmr_zeropadding=vmr_zeropadding)
