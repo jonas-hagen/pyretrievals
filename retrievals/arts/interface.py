@@ -461,7 +461,7 @@ class ArtsController():
     def n_lon(self):
         if self.atmosphere_dim == 1:
             return 1
-        return len(self.ws.lat_grid.value)
+        return len(self.ws.lon_grid.value)
 
     @property
     def n_y(self):
