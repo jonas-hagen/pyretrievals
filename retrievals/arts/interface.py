@@ -132,9 +132,9 @@ class ArtsController():
         :param lat_grid:
         :param lon_grid:
         """
-        if lat_grid is None:
+        if lat_grid is None and self.ws.atmosphere_dim.value >= 2:
             lat_grid = np.array([0])
-        if lon_grid is None:
+        if lon_grid is None and self.ws.atmosphere_dim.value >= 3:
             lon_grid = np.array([0])
 
         if not self.ws.atmosphere_dim.initialized:
@@ -144,7 +144,7 @@ class ArtsController():
         if not _is_desc(p_grid) or not np.all(p_grid > 0):
             raise ValueError('Values of p_grid must be strictly decreasing and positive.')
         if self.ws.atmosphere_dim.value == 1:
-            if lat_grid.size > 1 or lon_grid.size > 1:
+            if lat_grid is not None or lon_grid is not None or lat_grid.size or lon_grid.size:
                 raise ValueError('For 1D atmosphere, lat_grid and lon_grid shall be of length 1.')
         elif self.ws.atmosphere_dim.value == 2:
             if lon_grid is not None or len(lon_grid):
