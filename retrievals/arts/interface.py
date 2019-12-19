@@ -147,8 +147,8 @@ class ArtsController():
             if lat_grid is not None or lon_grid is not None or lat_grid.size or lon_grid.size:
                 raise ValueError('For 1D atmosphere, lat_grid and lon_grid shall be of length 1.')
         elif self.ws.atmosphere_dim.value == 2:
-            if lon_grid is not None or len(lon_grid):
-                raise ValueError('For 2D atmosphere, lon_grid shall be empty.')
+            if lon_grid is not None:
+                raise ValueError('For 2D atmosphere, lon_grid shall be None.')
             if lat_grid is None or len(lat_grid) == 0:
                 raise ValueError('For 2D atmosphere, lat_grid must be set.')
         elif self.ws.atmosphere_dim.value == 3:
